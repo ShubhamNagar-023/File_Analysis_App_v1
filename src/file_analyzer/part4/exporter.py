@@ -392,31 +392,66 @@ class Exporter:
             parts.append(f'    <h2>Heuristics Analysis ({len(triggered)} triggered, {len(not_triggered)} not triggered)</h2>')
             
             if triggered:
-                parts.append('    <h3>Triggered Heuristics</h3>')
+                parts.append('    <h3>Triggered Heuristics (Complete Details)</h3>')
                 for h in triggered:
-                    sev = h.get('severity', 'informational')
                     parts.append(f'    <div class="heuristic triggered">')
                     parts.append(f'      <h4>{html.escape(h.get("name", ""))}</h4>')
-                    parts.append(f'      <p><strong>ID:</strong> <code>{html.escape(h.get("heuristic_id", ""))}</code></p>')
-                    parts.append(f'      <p><strong>Severity:</strong> <span class="severity-{sev}">{sev}</span></p>')
-                    parts.append(f'      <p><strong>Weight:</strong> {h.get("weight", 0)}</p>')
-                    parts.append(f'      <p><strong>Explanation:</strong> {html.escape(h.get("explanation", ""))}</p>')
-                    if h.get('evidence'):
-                        parts.append(f'      <p><strong>Evidence:</strong> <code>{html.escape(str(h.get("evidence", "")))}</code></p>')
+                    
+                    # Display ALL fields from the heuristic, just like JSON
+                    parts.append('      <table>')
+                    parts.append('        <tr><th style="width: 30%">Field</th><th>Value</th></tr>')
+                    
+                    # Sort keys for consistent display
+                    for key in sorted(h.keys()):
+                        value = h[key]
+                        # Format value appropriately
+                        if isinstance(value, dict):
+                            value_html = '<pre><code>' + html.escape(json.dumps(value, indent=2, default=str)) + '</code></pre>'
+                        elif isinstance(value, (list, tuple)):
+                            value_html = '<pre><code>' + html.escape(json.dumps(value, indent=2, default=str)) + '</code></pre>'
+                        elif key in ['heuristic_id', 'record_id']:
+                            value_html = f'<code>{html.escape(str(value))}</code>'
+                        elif key == 'severity':
+                            sev = str(value)
+                            value_html = f'<span class="severity-{sev}">{html.escape(sev)}</span>'
+                        else:
+                            value_html = html.escape(str(value))
+                        
+                        parts.append(f'        <tr><td><strong>{html.escape(key)}</strong></td><td>{value_html}</td></tr>')
+                    
+                    parts.append('      </table>')
                     parts.append('    </div>')
             
             if not_triggered:
-                parts.append('    <h3>Evaluated But Not Triggered</h3>')
-                parts.append('    <table>')
-                parts.append('      <tr><th>Heuristic</th><th>ID</th><th>Severity</th></tr>')
+                parts.append('    <h3>Evaluated But Not Triggered (Complete Details)</h3>')
                 for h in not_triggered:
-                    sev = h.get('severity', 'informational')
-                    parts.append('      <tr>')
-                    parts.append(f'        <td>{html.escape(h.get("name", ""))}</td>')
-                    parts.append(f'        <td><code>{html.escape(h.get("heuristic_id", ""))}</code></td>')
-                    parts.append(f'        <td class="severity-{sev}">{sev}</td>')
-                    parts.append('      </tr>')
-                parts.append('    </table>')
+                    parts.append(f'    <div class="heuristic">')
+                    parts.append(f'      <h4>{html.escape(h.get("name", ""))}</h4>')
+                    
+                    # Display ALL fields from the heuristic, just like JSON
+                    parts.append('      <table>')
+                    parts.append('        <tr><th style="width: 30%">Field</th><th>Value</th></tr>')
+                    
+                    # Sort keys for consistent display
+                    for key in sorted(h.keys()):
+                        value = h[key]
+                        # Format value appropriately
+                        if isinstance(value, dict):
+                            value_html = '<pre><code>' + html.escape(json.dumps(value, indent=2, default=str)) + '</code></pre>'
+                        elif isinstance(value, (list, tuple)):
+                            value_html = '<pre><code>' + html.escape(json.dumps(value, indent=2, default=str)) + '</code></pre>'
+                        elif key in ['heuristic_id', 'record_id']:
+                            value_html = f'<code>{html.escape(str(value))}</code>'
+                        elif key == 'severity':
+                            sev = str(value)
+                            value_html = f'<span class="severity-{sev}">{html.escape(sev)}</span>'
+                        else:
+                            value_html = html.escape(str(value))
+                        
+                        parts.append(f'        <tr><td><strong>{html.escape(key)}</strong></td><td>{value_html}</td></tr>')
+                    
+                    parts.append('      </table>')
+                    parts.append('    </div>')
             
             parts.append('  </div>')
         
@@ -438,25 +473,33 @@ class Exporter:
                 parts.append(f'      <tr><td>{html.escape(ft)}</td><td>{count}</td></tr>')
             parts.append('    </table>')
             
-            # Individual findings
-            parts.append('    <h3>Individual Findings</h3>')
+            # Individual findings - show ALL fields like JSON format
+            parts.append('    <h3>Individual Findings (Complete Details)</h3>')
             for idx, f in enumerate(findings, 1):
                 ft = f.get('finding_type', 'unknown')
-                conf = f.get('confidence', 'UNKNOWN')
                 parts.append(f'    <div class="finding">')
                 parts.append(f'      <h4>Finding #{idx}: {html.escape(ft)}</h4>')
-                parts.append(f'      <p><strong>ID:</strong> <code>{html.escape(f.get("finding_id", ""))}</code></p>')
-                parts.append(f'      <p><strong>Confidence:</strong> {html.escape(conf)}</p>')
-                parts.append(f'      <p><strong>Semantic Type:</strong> {html.escape(f.get("semantic_file_type", ""))}</p>')
                 
-                # Add any additional data
-                if f.get('description'):
-                    parts.append(f'      <p><strong>Description:</strong> {html.escape(f.get("description", ""))}</p>')
-                if f.get('evidence'):
-                    evidence = f.get('evidence', {})
-                    parts.append('      <p><strong>Evidence:</strong></p>')
-                    parts.append('      <pre><code>' + html.escape(json.dumps(evidence, indent=2, default=str)) + '</code></pre>')
+                # Display ALL fields from the finding, just like JSON
+                parts.append('      <table>')
+                parts.append('        <tr><th style="width: 30%">Field</th><th>Value</th></tr>')
                 
+                # Sort keys for consistent display
+                for key in sorted(f.keys()):
+                    value = f[key]
+                    # Format value appropriately
+                    if isinstance(value, dict):
+                        value_html = '<pre><code>' + html.escape(json.dumps(value, indent=2, default=str)) + '</code></pre>'
+                    elif isinstance(value, (list, tuple)):
+                        value_html = '<pre><code>' + html.escape(json.dumps(value, indent=2, default=str)) + '</code></pre>'
+                    elif key in ['finding_id', 'record_id', 'heuristic_id']:
+                        value_html = f'<code>{html.escape(str(value))}</code>'
+                    else:
+                        value_html = html.escape(str(value))
+                    
+                    parts.append(f'        <tr><td><strong>{html.escape(key)}</strong></td><td>{value_html}</td></tr>')
+                
+                parts.append('      </table>')
                 parts.append('    </div>')
             
             parts.append('  </div>')
@@ -650,21 +693,34 @@ class Exporter:
                 
                 if triggered:
                     lines.append("")
-                    lines.append("Triggered Heuristics:")
-                    for h in triggered:
-                        lines.append(f"  - {h.get('name', '')}")
-                        lines.append(f"    ID: {h.get('heuristic_id', '')}")
-                        lines.append(f"    Severity: {h.get('severity', 'informational')}")
-                        lines.append(f"    Weight: {h.get('weight', 0)}")
-                        lines.append(f"    Explanation: {h.get('explanation', '')}")
-                        if h.get('evidence'):
-                            lines.append(f"    Evidence: {h.get('evidence', '')}")
+                    lines.append("Triggered Heuristics (Complete Details):")
+                    for idx, h in enumerate(triggered, 1):
+                        lines.append(f"\n  Triggered Heuristic #{idx}: {h.get('name', '')}")
+                        # Show ALL fields
+                        for key in sorted(h.keys()):
+                            if key == 'name':
+                                continue  # Already shown in header
+                            value = h[key]
+                            if isinstance(value, (dict, list)):
+                                lines.append(f"    {key}: {json.dumps(value, indent=6, default=str)}")
+                            else:
+                                lines.append(f"    {key}: {value}")
                         lines.append("")
                 
                 if not_triggered:
-                    lines.append("Evaluated But Not Triggered:")
-                    for h in not_triggered:
-                        lines.append(f"  - {h.get('name', '')} (ID: {h.get('heuristic_id', '')})")
+                    lines.append("")
+                    lines.append("Evaluated But Not Triggered (Complete Details):")
+                    for idx, h in enumerate(not_triggered, 1):
+                        lines.append(f"\n  Not Triggered Heuristic #{idx}: {h.get('name', '')}")
+                        # Show ALL fields
+                        for key in sorted(h.keys()):
+                            if key == 'name':
+                                continue  # Already shown in header
+                            value = h[key]
+                            if isinstance(value, (dict, list)):
+                                lines.append(f"    {key}: {json.dumps(value, indent=6, default=str)}")
+                            else:
+                                lines.append(f"    {key}: {value}")
             
             # Findings
             if findings:
@@ -684,17 +740,18 @@ class Exporter:
                     lines.append(f"  {ft}: {count}")
                 
                 lines.append("")
-                lines.append("Individual Findings:")
+                lines.append("Individual Findings (Complete Details):")
                 for idx, f in enumerate(findings, 1):
-                    lines.append(f"\n  Finding #{idx}:")
-                    lines.append(f"    ID: {f.get('finding_id', '')}")
-                    lines.append(f"    Type: {f.get('finding_type', '')}")
-                    lines.append(f"    Confidence: {f.get('confidence', '')}")
-                    lines.append(f"    Semantic Type: {f.get('semantic_file_type', '')}")
-                    if f.get('description'):
-                        lines.append(f"    Description: {f.get('description', '')}")
-                    if f.get('evidence'):
-                        lines.append(f"    Evidence: {json.dumps(f.get('evidence', {}), indent=6, default=str)}")
+                    lines.append(f"\n  Finding #{idx}: {f.get('finding_type', 'unknown')}")
+                    # Show ALL fields
+                    for key in sorted(f.keys()):
+                        if key == 'finding_type':
+                            continue  # Already shown in header
+                        value = f[key]
+                        if isinstance(value, (dict, list)):
+                            lines.append(f"    {key}: {json.dumps(value, indent=6, default=str)}")
+                        else:
+                            lines.append(f"    {key}: {value}")
             
             # Complete data sections
             lines.append("")
