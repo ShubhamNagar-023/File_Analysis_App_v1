@@ -1,0 +1,1271 @@
+(venv) shubhamnagar@Shubhams-MacBook-Air File_Analysis_App_v1-main % python -m src.file_analyzer.analyzer test.txt
+<frozen runpy>:128: RuntimeWarning: 'src.file_analyzer.analyzer' found in sys.modules after import of package 'src.file_analyzer', but prior to execution of 'src.file_analyzer.analyzer'; this may result in unpredictable behaviour
+{
+  "file_info": {
+    "file_path": "/Users/shubhamnagar/Downloads/File_Analysis_App_v1-main/test.txt",
+    "file_name": "test.txt",
+    "file_size": 20
+  },
+  "ingestion": {
+    "analysis_name": "secure_file_ingestion",
+    "library_or_method": "Python os/pathlib/stat",
+    "input_byte_range": "N/A",
+    "output_value": {
+      "status": "SUCCESS",
+      "file_path": "/Users/shubhamnagar/Downloads/File_Analysis_App_v1-main/test.txt",
+      "expected_size_bytes": 20,
+      "actual_size_bytes": 20,
+      "size_match": true,
+      "is_truncated": false,
+      "is_symlink": false,
+      "is_hard_linked": false,
+      "hard_link_count": 1,
+      "is_sparse": false
+    },
+    "evidence": [
+      {
+        "type": "size_verification",
+        "expected": 20,
+        "actual": 20,
+        "match": true
+      }
+    ],
+    "verification_method": "filesystem stat comparison",
+    "failure_reason": null
+  },
+  "cryptographic_identity": {
+    "hashes": [
+      {
+        "analysis_name": "hash_md5",
+        "library_or_method": "hashlib.md5",
+        "input_byte_range": "0-20",
+        "output_value": "5dd39cab1c53c2c77cd352983f9641e1",
+        "evidence": {
+          "algorithm": "MD5",
+          "digest_length_bits": 128,
+          "full_file_coverage": true
+        },
+        "verification_method": "Compare with: md5sum test.txt",
+        "failure_reason": null
+      },
+      {
+        "analysis_name": "hash_sha1",
+        "library_or_method": "hashlib.sha1",
+        "input_byte_range": "0-20",
+        "output_value": "b56df8ed5365fca1419818aa384ba3b5e7756047",
+        "evidence": {
+          "algorithm": "SHA1",
+          "digest_length_bits": 160,
+          "full_file_coverage": true
+        },
+        "verification_method": "Compare with: sha1sum test.txt",
+        "failure_reason": null
+      },
+      {
+        "analysis_name": "hash_sha256",
+        "library_or_method": "hashlib.sha256",
+        "input_byte_range": "0-20",
+        "output_value": "c87e2ca771bab6024c269b933389d2a92d4941c848c52f155b9b84e1f109fe35",
+        "evidence": {
+          "algorithm": "SHA256",
+          "digest_length_bits": 256,
+          "full_file_coverage": true
+        },
+        "verification_method": "Compare with: sha256sum test.txt",
+        "failure_reason": null
+      },
+      {
+        "analysis_name": "hash_sha512",
+        "library_or_method": "hashlib.sha512",
+        "input_byte_range": "0-20",
+        "output_value": "3de78a913cb8896f8f08ce3374b726b49ed00cc569621c5161c31eb80fca4d2f5e4443d42676dfc79743f345de7f0b95dbb2c97b2bc1a438a5a49c5f1b5298ac",
+        "evidence": {
+          "algorithm": "SHA512",
+          "digest_length_bits": 512,
+          "full_file_coverage": true
+        },
+        "verification_method": "Compare with: sha512sum test.txt",
+        "failure_reason": null
+      }
+    ],
+    "byte_range_covered": "0-20",
+    "verification_note": "Hashes computed over entire file content"
+  },
+  "magic_detection": {
+    "analysis_name": "magic_signature_detection",
+    "library_or_method": "Built-in signature matching + python-magic",
+    "input_byte_range": "0-20",
+    "output_value": {
+      "signatures_found": [],
+      "overlapping_signatures": [],
+      "polyglot_indicators": [],
+      "scan_coverage": {
+        "offsets_scanned": [
+          0,
+          1,
+          2,
+          4,
+          8
+        ],
+        "total_offsets_scanned": 5,
+        "max_offset_scanned": 8,
+        "file_size": 20,
+        "coverage_percentage": 40.0,
+        "deep_scan_enabled": true,
+        "scan_strategy": "header+strategic+tail+deep"
+      },
+      "magic_library_detection": {
+        "description": "ASCII text",
+        "mime_type": "text/plain"
+      }
+    },
+    "evidence": [],
+    "verification_method": "hexdump -C <file> | head -n 100 to verify magic bytes at reported offsets",
+    "failure_reason": null
+  },
+  "container_identification": {
+    "analysis_name": "container_type_identification",
+    "library_or_method": "Signature-based detection",
+    "input_byte_range": "0-20",
+    "output_value": {
+      "container_type": null,
+      "is_container": false
+    },
+    "evidence": [
+      {
+        "detected_type": null,
+        "method": "magic_byte_match"
+      }
+    ],
+    "verification_method": "hexdump -C <file> | head -n 5 to verify container magic bytes",
+    "failure_reason": null
+  },
+  "semantic_file_type": {
+    "analysis_name": "semantic_file_type_resolution",
+    "library_or_method": "Internal structure analysis + olefile/zipfile",
+    "input_byte_range": "0-20",
+    "output_value": {
+      "container_type": null,
+      "semantic_file_type": "PLAIN_TEXT",
+      "classification_confidence": "HIGH",
+      "classification_evidence": [
+        {
+          "type": "text_analysis",
+          "confidence": "HIGH",
+          "sample_bytes_checked": 20,
+          "encoding_detected": "UTF-8",
+          "bom_detected": null,
+          "text_ratio": 1.0,
+          "entropy": 3.2464,
+          "statistical_confidence": "High"
+        }
+      ]
+    },
+    "evidence": [
+      {
+        "type": "text_analysis",
+        "confidence": "HIGH",
+        "sample_bytes_checked": 20,
+        "encoding_detected": "UTF-8",
+        "bom_detected": null,
+        "text_ratio": 1.0,
+        "entropy": 3.2464,
+        "statistical_confidence": "High"
+      }
+    ],
+    "verification_method": "unzip -l <file> for ZIP/OOXML; olefile <file> for OLE; file --mime-type <file>",
+    "failure_reason": null
+  },
+  "extension_analysis": {
+    "analysis_name": "extension_chain_analysis",
+    "library_or_method": "Python pathlib/unicodedata",
+    "input_byte_range": "N/A (filename analysis)",
+    "output_value": {
+      "raw_filename": "test.txt",
+      "normalized_filename": "test.txt",
+      "extension_chain": [
+        "txt"
+      ],
+      "primary_extension": "txt",
+      "double_extension_detected": false,
+      "hidden_extension_detected": false,
+      "extension_mismatch": false,
+      "unicode_deception": [],
+      "homoglyphs_detected": []
+    },
+    "evidence": [],
+    "verification_method": "ls -la <file> or file properties dialog to view filename; python unicodedata to analyze characters",
+    "failure_reason": null
+  },
+  "filesystem_metadata": {
+    "analysis_name": "filesystem_metadata",
+    "library_or_method": "Python os/stat",
+    "input_byte_range": "N/A (filesystem metadata)",
+    "output_value": {
+      "timestamps": {
+        "created": "2026-01-05T20:06:56.729072",
+        "modified": "2026-01-05T20:06:56.729234",
+        "accessed": "2026-01-05T20:06:57.295792"
+      },
+      "permissions": {
+        "mode_octal": "0o100644",
+        "is_readable": true,
+        "is_writable": true,
+        "is_executable": false,
+        "owner_read": true,
+        "owner_write": true,
+        "owner_execute": false,
+        "group_read": true,
+        "group_write": false,
+        "group_execute": false,
+        "other_read": true,
+        "other_write": false,
+        "other_execute": false
+      },
+      "ownership": {
+        "uid": 501,
+        "gid": 20,
+        "user_name": "shubhamnagar",
+        "group_name": "staff"
+      },
+      "ntfs_ads": {
+        "platform": "Darwin",
+        "detection_attempted": false,
+        "streams_found": [],
+        "status": "NOT_APPLICABLE",
+        "note": "NTFS ADS is Windows-only; current platform does not support"
+      }
+    },
+    "evidence": [
+      {
+        "type": "stat_info",
+        "st_mode": 33188,
+        "st_uid": 501,
+        "st_gid": 20
+      }
+    ],
+    "verification_method": "System stat calls",
+    "failure_reason": null
+  },
+  "advanced_checks": {
+    "analysis_name": "advanced_checks",
+    "library_or_method": "Combined analysis",
+    "input_byte_range": "0-20",
+    "output_value": {
+      "checks_performed": [
+        "extension_magic_mismatch",
+        "ooxml_completeness",
+        "ooxml_extra_components",
+        "trailing_data",
+        "polyglot_detection",
+        "internal_structure_validation"
+      ],
+      "issues_found": []
+    },
+    "evidence": [],
+    "verification_method": "unzip -t <file> for ZIP validation; hexdump -C <file> | tail for trailing data",
+    "failure_reason": null
+  },
+  "summary": {
+    "container_type": null,
+    "semantic_file_type": "PLAIN_TEXT",
+    "classification_confidence": "HIGH",
+    "classification_notes": [],
+    "detected_deception_flags": [],
+    "file_path": "/Users/shubhamnagar/Downloads/File_Analysis_App_v1-main/test.txt",
+    "file_size": 20,
+    "analysis_complete": true,
+    "ambiguity": null
+  }
+}
+(venv) shubhamnagar@Shubhams-MacBook-Air File_Analysis_App_v1-main % 
+
+
+(venv) shubhamnagar@Shubhams-MacBook-Air File_Analysis_App_v1-main % python -m src.file_analyzer.analyzer /Users/shubhamnagar/Downloads/IMG_5508.jpeg | python -m json.tool             
+<frozen runpy>:128: RuntimeWarning: 'src.file_analyzer.analyzer' found in sys.modules after import of package 'src.file_analyzer', but prior to execution of 'src.file_analyzer.analyzer'; this may result in unpredictable behaviour
+{
+    "file_info": {
+        "file_path": "/Users/shubhamnagar/Downloads/IMG_5508.jpeg",
+        "file_name": "IMG_5508.jpeg",
+        "file_size": 2935578
+    },
+    "ingestion": {
+        "analysis_name": "secure_file_ingestion",
+        "library_or_method": "Python os/pathlib/stat",
+        "input_byte_range": "N/A",
+        "output_value": {
+            "status": "SUCCESS",
+            "file_path": "/Users/shubhamnagar/Downloads/IMG_5508.jpeg",
+            "expected_size_bytes": 2935578,
+            "actual_size_bytes": 2935578,
+            "size_match": true,
+            "is_truncated": false,
+            "is_symlink": false,
+            "is_hard_linked": false,
+            "hard_link_count": 1,
+            "is_sparse": false
+        },
+        "evidence": [
+            {
+                "type": "size_verification",
+                "expected": 2935578,
+                "actual": 2935578,
+                "match": true
+            }
+        ],
+        "verification_method": "filesystem stat comparison",
+        "failure_reason": null
+    },
+    "cryptographic_identity": {
+        "hashes": [
+            {
+                "analysis_name": "hash_md5",
+                "library_or_method": "hashlib.md5",
+                "input_byte_range": "0-2935578",
+                "output_value": "031597a56419ab0081aeeef3c4a89e00",
+                "evidence": {
+                    "algorithm": "MD5",
+                    "digest_length_bits": 128,
+                    "full_file_coverage": true
+                },
+                "verification_method": "Compare with: md5sum IMG_5508.jpeg",
+                "failure_reason": null
+            },
+            {
+                "analysis_name": "hash_sha1",
+                "library_or_method": "hashlib.sha1",
+                "input_byte_range": "0-2935578",
+                "output_value": "5c9d3717cf9bb89e33ef18b179afb00c512fd0a3",
+                "evidence": {
+                    "algorithm": "SHA1",
+                    "digest_length_bits": 160,
+                    "full_file_coverage": true
+                },
+                "verification_method": "Compare with: sha1sum IMG_5508.jpeg",
+                "failure_reason": null
+            },
+            {
+                "analysis_name": "hash_sha256",
+                "library_or_method": "hashlib.sha256",
+                "input_byte_range": "0-2935578",
+                "output_value": "463f0561f49bdb647abe3b330e30d017a55743d4912c5d4a2d24b430577ed6ae",
+                "evidence": {
+                    "algorithm": "SHA256",
+                    "digest_length_bits": 256,
+                    "full_file_coverage": true
+                },
+                "verification_method": "Compare with: sha256sum IMG_5508.jpeg",
+                "failure_reason": null
+            },
+            {
+                "analysis_name": "hash_sha512",
+                "library_or_method": "hashlib.sha512",
+                "input_byte_range": "0-2935578",
+                "output_value": "8d4a0c978056e4c615f2d6a7256b9a5002fbad4c54982554c9a42e89d1b1816128ae8d7fccf1ea5e4fdcc991cce3f7bea07b3798624861e806e3f24f34e4ba6b",
+                "evidence": {
+                    "algorithm": "SHA512",
+                    "digest_length_bits": 512,
+                    "full_file_coverage": true
+                },
+                "verification_method": "Compare with: sha512sum IMG_5508.jpeg",
+                "failure_reason": null
+            }
+        ],
+        "byte_range_covered": "0-2935578",
+        "verification_note": "Hashes computed over entire file content"
+    },
+    "magic_detection": {
+        "analysis_name": "magic_signature_detection",
+        "library_or_method": "Built-in signature matching + python-magic",
+        "input_byte_range": "0-2935578",
+        "output_value": {
+            "signatures_found": [
+                {
+                    "signature_type": "JPEG",
+                    "category": "image",
+                    "offset": 0,
+                    "signature_hex": "ffd8ff",
+                    "signature_length": 3
+                }
+            ],
+            "overlapping_signatures": [],
+            "polyglot_indicators": [],
+            "scan_coverage": {
+                "offsets_scanned": [
+                    0,
+                    1,
+                    2,
+                    4,
+                    8,
+                    512,
+                    1024,
+                    2048,
+                    4096,
+                    8192,
+                    2927386,
+                    2934554,
+                    2935066
+                ],
+                "total_offsets_scanned": 13,
+                "max_offset_scanned": 2935066,
+                "file_size": 2935578,
+                "coverage_percentage": 99.98,
+                "deep_scan_enabled": false,
+                "scan_strategy": "header+strategic+tail"
+            },
+            "magic_library_detection": {
+                "description": "JPEG image data, JFIF standard 1.01, resolution (DPI), density 300x300, segment length 20, Exif Standard: [TIFF image data, big-endian, direntries=12, manufacturer=Apple, model=iPhone 13, orientation=upper-left, xresolution=174, yresolution=182, resolutionunit=2, software=26.0.1, datetime=2025:11:30 14:01:45, hostcomputer=iPhone 13, GPS-Data], baseline, precision 8, 3024x4032, components 3",
+                "mime_type": "image/jpeg"
+            }
+        },
+        "evidence": [
+            {
+                "signature_type": "JPEG",
+                "category": "image",
+                "offset": 0,
+                "signature_hex": "ffd8ff",
+                "signature_length": 3
+            }
+        ],
+        "verification_method": "hexdump -C <file> | head -n 100 to verify magic bytes at reported offsets",
+        "failure_reason": null
+    },
+    "container_identification": {
+        "analysis_name": "container_type_identification",
+        "library_or_method": "Signature-based detection",
+        "input_byte_range": "0-1024",
+        "output_value": {
+            "container_type": null,
+            "is_container": false
+        },
+        "evidence": [
+            {
+                "detected_type": null,
+                "method": "magic_byte_match"
+            }
+        ],
+        "verification_method": "hexdump -C <file> | head -n 5 to verify container magic bytes",
+        "failure_reason": null
+    },
+    "semantic_file_type": {
+        "analysis_name": "semantic_file_type_resolution",
+        "library_or_method": "Internal structure analysis + olefile/zipfile",
+        "input_byte_range": "0-2935578",
+        "output_value": {
+            "container_type": null,
+            "semantic_file_type": "IMAGE_JPEG",
+            "classification_confidence": "HIGH",
+            "classification_evidence": [
+                {
+                    "type": "magic_match",
+                    "format": "JPEG"
+                }
+            ]
+        },
+        "evidence": [
+            {
+                "type": "magic_match",
+                "format": "JPEG"
+            }
+        ],
+        "verification_method": "unzip -l <file> for ZIP/OOXML; olefile <file> for OLE; file --mime-type <file>",
+        "failure_reason": null
+    },
+    "extension_analysis": {
+        "analysis_name": "extension_chain_analysis",
+        "library_or_method": "Python pathlib/unicodedata",
+        "input_byte_range": "N/A (filename analysis)",
+        "output_value": {
+            "raw_filename": "IMG_5508.jpeg",
+            "normalized_filename": "IMG_5508.jpeg",
+            "extension_chain": [
+                "jpeg"
+            ],
+            "primary_extension": "jpeg",
+            "double_extension_detected": false,
+            "hidden_extension_detected": false,
+            "extension_mismatch": false,
+            "unicode_deception": [],
+            "homoglyphs_detected": []
+        },
+        "evidence": [],
+        "verification_method": "ls -la <file> or file properties dialog to view filename; python unicodedata to analyze characters",
+        "failure_reason": null
+    },
+    "filesystem_metadata": {
+        "analysis_name": "filesystem_metadata",
+        "library_or_method": "Python os/stat",
+        "input_byte_range": "N/A (filesystem metadata)",
+        "output_value": {
+            "timestamps": {
+                "created": "2025-11-30T14:06:42.195899",
+                "modified": "2025-11-30T14:06:43.661742",
+                "accessed": "2025-12-23T22:09:33.548525"
+            },
+            "permissions": {
+                "mode_octal": "0o100644",
+                "is_readable": true,
+                "is_writable": true,
+                "is_executable": false,
+                "owner_read": true,
+                "owner_write": true,
+                "owner_execute": false,
+                "group_read": true,
+                "group_write": false,
+                "group_execute": false,
+                "other_read": true,
+                "other_write": false,
+                "other_execute": false
+            },
+            "ownership": {
+                "uid": 501,
+                "gid": 20,
+                "user_name": "shubhamnagar",
+                "group_name": "staff"
+            },
+            "ntfs_ads": {
+                "platform": "Darwin",
+                "detection_attempted": false,
+                "streams_found": [],
+                "status": "NOT_APPLICABLE",
+                "note": "NTFS ADS is Windows-only; current platform does not support"
+            }
+        },
+        "evidence": [
+            {
+                "type": "stat_info",
+                "st_mode": 33188,
+                "st_uid": 501,
+                "st_gid": 20
+            }
+        ],
+        "verification_method": "System stat calls",
+        "failure_reason": null
+    },
+    "advanced_checks": {
+        "analysis_name": "advanced_checks",
+        "library_or_method": "Combined analysis",
+        "input_byte_range": "0-2935578",
+        "output_value": {
+            "checks_performed": [
+                "extension_magic_mismatch",
+                "ooxml_completeness",
+                "ooxml_extra_components",
+                "trailing_data",
+                "polyglot_detection",
+                "internal_structure_validation"
+            ],
+            "issues_found": []
+        },
+        "evidence": [],
+        "verification_method": "unzip -t <file> for ZIP validation; hexdump -C <file> | tail for trailing data",
+        "failure_reason": null
+    },
+    "summary": {
+        "container_type": null,
+        "semantic_file_type": "IMAGE_JPEG",
+        "classification_confidence": "HIGH",
+        "classification_notes": [],
+        "detected_deception_flags": [],
+        "file_path": "/Users/shubhamnagar/Downloads/IMG_5508.jpeg",
+        "file_size": 2935578,
+        "analysis_complete": true,
+        "ambiguity": null
+    }
+}
+(venv) shubhamnagar@Shubhams-MacBook-Air File_Analysis_App_v1-main % 
+
+
+(venv) shubhamnagar@Shubhams-MacBook-Air File_Analysis_App_v1-main % python -m src.file_analyzer.analyzer /Users/shubhamnagar/Downloads/INNO1911C0013810881864.pdf | python -m json.tool
+<frozen runpy>:128: RuntimeWarning: 'src.file_analyzer.analyzer' found in sys.modules after import of package 'src.file_analyzer', but prior to execution of 'src.file_analyzer.analyzer'; this may result in unpredictable behaviour
+{
+    "file_info": {
+        "file_path": "/Users/shubhamnagar/Downloads/INNO1911C0013810881864.pdf",
+        "file_name": "INNO1911C0013810881864.pdf",
+        "file_size": 220697
+    },
+    "ingestion": {
+        "analysis_name": "secure_file_ingestion",
+        "library_or_method": "Python os/pathlib/stat",
+        "input_byte_range": "N/A",
+        "output_value": {
+            "status": "SUCCESS",
+            "file_path": "/Users/shubhamnagar/Downloads/INNO1911C0013810881864.pdf",
+            "expected_size_bytes": 220697,
+            "actual_size_bytes": 220697,
+            "size_match": true,
+            "is_truncated": false,
+            "is_symlink": false,
+            "is_hard_linked": false,
+            "hard_link_count": 1,
+            "is_sparse": false
+        },
+        "evidence": [
+            {
+                "type": "size_verification",
+                "expected": 220697,
+                "actual": 220697,
+                "match": true
+            }
+        ],
+        "verification_method": "filesystem stat comparison",
+        "failure_reason": null
+    },
+    "cryptographic_identity": {
+        "hashes": [
+            {
+                "analysis_name": "hash_md5",
+                "library_or_method": "hashlib.md5",
+                "input_byte_range": "0-220697",
+                "output_value": "2de39e97e1dcf81cc41c421a0dcb3238",
+                "evidence": {
+                    "algorithm": "MD5",
+                    "digest_length_bits": 128,
+                    "full_file_coverage": true
+                },
+                "verification_method": "Compare with: md5sum INNO1911C0013810881864.pdf",
+                "failure_reason": null
+            },
+            {
+                "analysis_name": "hash_sha1",
+                "library_or_method": "hashlib.sha1",
+                "input_byte_range": "0-220697",
+                "output_value": "ce670ad5a00576e577cf54a0e3e7f7f699b70400",
+                "evidence": {
+                    "algorithm": "SHA1",
+                    "digest_length_bits": 160,
+                    "full_file_coverage": true
+                },
+                "verification_method": "Compare with: sha1sum INNO1911C0013810881864.pdf",
+                "failure_reason": null
+            },
+            {
+                "analysis_name": "hash_sha256",
+                "library_or_method": "hashlib.sha256",
+                "input_byte_range": "0-220697",
+                "output_value": "adfbd2db9fb33a65b87eb4f2fb7d811628665c74e0b37d57af704dd3e8e4e662",
+                "evidence": {
+                    "algorithm": "SHA256",
+                    "digest_length_bits": 256,
+                    "full_file_coverage": true
+                },
+                "verification_method": "Compare with: sha256sum INNO1911C0013810881864.pdf",
+                "failure_reason": null
+            },
+            {
+                "analysis_name": "hash_sha512",
+                "library_or_method": "hashlib.sha512",
+                "input_byte_range": "0-220697",
+                "output_value": "66589317802ffba5890c8dbb1df9dbdd0f01c464c46fce8aefa97da194fc31e19ac214f7ae01bc981c4670e8f10dda7e51fa467b3e8800d97986387a7ce955a5",
+                "evidence": {
+                    "algorithm": "SHA512",
+                    "digest_length_bits": 512,
+                    "full_file_coverage": true
+                },
+                "verification_method": "Compare with: sha512sum INNO1911C0013810881864.pdf",
+                "failure_reason": null
+            }
+        ],
+        "byte_range_covered": "0-220697",
+        "verification_note": "Hashes computed over entire file content"
+    },
+    "magic_detection": {
+        "analysis_name": "magic_signature_detection",
+        "library_or_method": "Built-in signature matching + python-magic",
+        "input_byte_range": "0-220697",
+        "output_value": {
+            "signatures_found": [
+                {
+                    "signature_type": "PDF",
+                    "category": "document",
+                    "offset": 0,
+                    "signature_hex": "25504446",
+                    "signature_length": 4
+                }
+            ],
+            "overlapping_signatures": [],
+            "polyglot_indicators": [],
+            "scan_coverage": {
+                "offsets_scanned": [
+                    0,
+                    1,
+                    2,
+                    4,
+                    8,
+                    512,
+                    1024,
+                    2048,
+                    4096,
+                    8192,
+                    12288,
+                    16384,
+                    20480,
+                    24576,
+                    28672,
+                    32768,
+                    36864,
+                    40960,
+                    45056,
+                    49152,
+                    53248,
+                    57344,
+                    61440,
+                    65536,
+                    69632,
+                    73728,
+                    77824,
+                    81920,
+                    86016,
+                    90112,
+                    94208,
+                    98304,
+                    102400,
+                    106496,
+                    110592,
+                    114688,
+                    118784,
+                    122880,
+                    126976,
+                    131072,
+                    135168,
+                    139264,
+                    143360,
+                    147456,
+                    151552,
+                    155648,
+                    159744,
+                    163840,
+                    167936,
+                    172032,
+                    176128,
+                    180224,
+                    184320,
+                    188416,
+                    192512,
+                    196608,
+                    200704,
+                    204800,
+                    208896,
+                    212505,
+                    212992,
+                    217088,
+                    219673,
+                    220185
+                ],
+                "total_offsets_scanned": 64,
+                "max_offset_scanned": 220185,
+                "file_size": 220697,
+                "coverage_percentage": 99.77,
+                "deep_scan_enabled": true,
+                "scan_strategy": "header+strategic+tail+deep"
+            },
+            "magic_library_detection": {
+                "description": "PDF document, version 1.7, 4 page(s)",
+                "mime_type": "application/pdf"
+            }
+        },
+        "evidence": [
+            {
+                "signature_type": "PDF",
+                "category": "document",
+                "offset": 0,
+                "signature_hex": "25504446",
+                "signature_length": 4
+            }
+        ],
+        "verification_method": "hexdump -C <file> | head -n 100 to verify magic bytes at reported offsets",
+        "failure_reason": null
+    },
+    "container_identification": {
+        "analysis_name": "container_type_identification",
+        "library_or_method": "Signature-based detection",
+        "input_byte_range": "0-1024",
+        "output_value": {
+            "container_type": "PDF",
+            "is_container": true
+        },
+        "evidence": [
+            {
+                "detected_type": "PDF",
+                "method": "magic_byte_match"
+            }
+        ],
+        "verification_method": "hexdump -C <file> | head -n 5 to verify container magic bytes",
+        "failure_reason": null
+    },
+    "semantic_file_type": {
+        "analysis_name": "semantic_file_type_resolution",
+        "library_or_method": "Internal structure analysis + olefile/zipfile",
+        "input_byte_range": "0-220697",
+        "output_value": {
+            "container_type": "PDF",
+            "semantic_file_type": "PDF",
+            "classification_confidence": "HIGH",
+            "classification_evidence": [
+                {
+                    "type": "magic_match",
+                    "value": "PDF signature confirmed"
+                }
+            ]
+        },
+        "evidence": [
+            {
+                "type": "magic_match",
+                "value": "PDF signature confirmed"
+            }
+        ],
+        "verification_method": "unzip -l <file> for ZIP/OOXML; olefile <file> for OLE; file --mime-type <file>",
+        "failure_reason": null
+    },
+    "extension_analysis": {
+        "analysis_name": "extension_chain_analysis",
+        "library_or_method": "Python pathlib/unicodedata",
+        "input_byte_range": "N/A (filename analysis)",
+        "output_value": {
+            "raw_filename": "INNO1911C0013810881864.pdf",
+            "normalized_filename": "INNO1911C0013810881864.pdf",
+            "extension_chain": [
+                "pdf"
+            ],
+            "primary_extension": "pdf",
+            "double_extension_detected": false,
+            "hidden_extension_detected": false,
+            "extension_mismatch": false,
+            "unicode_deception": [],
+            "homoglyphs_detected": []
+        },
+        "evidence": [],
+        "verification_method": "ls -la <file> or file properties dialog to view filename; python unicodedata to analyze characters",
+        "failure_reason": null
+    },
+    "filesystem_metadata": {
+        "analysis_name": "filesystem_metadata",
+        "library_or_method": "Python os/stat",
+        "input_byte_range": "N/A (filesystem metadata)",
+        "output_value": {
+            "timestamps": {
+                "created": "2025-12-06T20:09:22.241496",
+                "modified": "2025-12-06T20:09:22.444086",
+                "accessed": "2025-12-20T21:59:10.617483"
+            },
+            "permissions": {
+                "mode_octal": "0o100644",
+                "is_readable": true,
+                "is_writable": true,
+                "is_executable": false,
+                "owner_read": true,
+                "owner_write": true,
+                "owner_execute": false,
+                "group_read": true,
+                "group_write": false,
+                "group_execute": false,
+                "other_read": true,
+                "other_write": false,
+                "other_execute": false
+            },
+            "ownership": {
+                "uid": 501,
+                "gid": 20,
+                "user_name": "shubhamnagar",
+                "group_name": "staff"
+            },
+            "ntfs_ads": {
+                "platform": "Darwin",
+                "detection_attempted": false,
+                "streams_found": [],
+                "status": "NOT_APPLICABLE",
+                "note": "NTFS ADS is Windows-only; current platform does not support"
+            }
+        },
+        "evidence": [
+            {
+                "type": "stat_info",
+                "st_mode": 33188,
+                "st_uid": 501,
+                "st_gid": 20
+            }
+        ],
+        "verification_method": "System stat calls",
+        "failure_reason": null
+    },
+    "advanced_checks": {
+        "analysis_name": "advanced_checks",
+        "library_or_method": "Combined analysis",
+        "input_byte_range": "0-220697",
+        "output_value": {
+            "checks_performed": [
+                "extension_magic_mismatch",
+                "ooxml_completeness",
+                "ooxml_extra_components",
+                "trailing_data",
+                "polyglot_detection",
+                "internal_structure_validation"
+            ],
+            "issues_found": []
+        },
+        "evidence": [],
+        "verification_method": "unzip -t <file> for ZIP validation; hexdump -C <file> | tail for trailing data",
+        "failure_reason": null
+    },
+    "summary": {
+        "container_type": "PDF",
+        "semantic_file_type": "PDF",
+        "classification_confidence": "HIGH",
+        "classification_notes": [],
+        "detected_deception_flags": [],
+        "file_path": "/Users/shubhamnagar/Downloads/INNO1911C0013810881864.pdf",
+        "file_size": 220697,
+        "analysis_complete": true,
+        "ambiguity": null
+    }
+}
+(venv) shubhamnagar@Shubhams-MacBook-Air File_Analysis_App_v1-main % 
+
+
+(venv) shubhamnagar@Shubhams-MacBook-Air File_Analysis_App_v1-main % python -m src.file_analyzer.analyzer /Users/shubhamnagar/Downloads/cyberbullying-survey.docx | python -m json.tool
+<frozen runpy>:128: RuntimeWarning: 'src.file_analyzer.analyzer' found in sys.modules after import of package 'src.file_analyzer', but prior to execution of 'src.file_analyzer.analyzer'; this may result in unpredictable behaviour
+{
+    "file_info": {
+        "file_path": "/Users/shubhamnagar/Downloads/cyberbullying-survey.docx",
+        "file_name": "cyberbullying-survey.docx",
+        "file_size": 90531
+    },
+    "ingestion": {
+        "analysis_name": "secure_file_ingestion",
+        "library_or_method": "Python os/pathlib/stat",
+        "input_byte_range": "N/A",
+        "output_value": {
+            "status": "SUCCESS",
+            "file_path": "/Users/shubhamnagar/Downloads/cyberbullying-survey.docx",
+            "expected_size_bytes": 90531,
+            "actual_size_bytes": 90531,
+            "size_match": true,
+            "is_truncated": false,
+            "is_symlink": false,
+            "is_hard_linked": false,
+            "hard_link_count": 1,
+            "is_sparse": false
+        },
+        "evidence": [
+            {
+                "type": "size_verification",
+                "expected": 90531,
+                "actual": 90531,
+                "match": true
+            }
+        ],
+        "verification_method": "filesystem stat comparison",
+        "failure_reason": null
+    },
+    "cryptographic_identity": {
+        "hashes": [
+            {
+                "analysis_name": "hash_md5",
+                "library_or_method": "hashlib.md5",
+                "input_byte_range": "0-90531",
+                "output_value": "3800c2542002e687ac765af150c7207f",
+                "evidence": {
+                    "algorithm": "MD5",
+                    "digest_length_bits": 128,
+                    "full_file_coverage": true
+                },
+                "verification_method": "Compare with: md5sum cyberbullying-survey.docx",
+                "failure_reason": null
+            },
+            {
+                "analysis_name": "hash_sha1",
+                "library_or_method": "hashlib.sha1",
+                "input_byte_range": "0-90531",
+                "output_value": "4950224f6417494026a3a0b24ec8c05656f68edd",
+                "evidence": {
+                    "algorithm": "SHA1",
+                    "digest_length_bits": 160,
+                    "full_file_coverage": true
+                },
+                "verification_method": "Compare with: sha1sum cyberbullying-survey.docx",
+                "failure_reason": null
+            },
+            {
+                "analysis_name": "hash_sha256",
+                "library_or_method": "hashlib.sha256",
+                "input_byte_range": "0-90531",
+                "output_value": "1c914c0f4917b02de65e49676928caea48425f3cdf4244fc8a2047c6fcad0986",
+                "evidence": {
+                    "algorithm": "SHA256",
+                    "digest_length_bits": 256,
+                    "full_file_coverage": true
+                },
+                "verification_method": "Compare with: sha256sum cyberbullying-survey.docx",
+                "failure_reason": null
+            },
+            {
+                "analysis_name": "hash_sha512",
+                "library_or_method": "hashlib.sha512",
+                "input_byte_range": "0-90531",
+                "output_value": "c0a49892fef2e6c84b68d754948abd89778a59a414ed89a3159562a8152f841230997870d241376d41f411f897f10ef5f2132f631c8e42d02117b6b1055490b9",
+                "evidence": {
+                    "algorithm": "SHA512",
+                    "digest_length_bits": 512,
+                    "full_file_coverage": true
+                },
+                "verification_method": "Compare with: sha512sum cyberbullying-survey.docx",
+                "failure_reason": null
+            }
+        ],
+        "byte_range_covered": "0-90531",
+        "verification_note": "Hashes computed over entire file content"
+    },
+    "magic_detection": {
+        "analysis_name": "magic_signature_detection",
+        "library_or_method": "Built-in signature matching + python-magic",
+        "input_byte_range": "0-90531",
+        "output_value": {
+            "signatures_found": [
+                {
+                    "signature_type": "ZIP",
+                    "category": "archive",
+                    "offset": 0,
+                    "signature_hex": "504b0304",
+                    "signature_length": 4
+                }
+            ],
+            "overlapping_signatures": [],
+            "polyglot_indicators": [],
+            "scan_coverage": {
+                "offsets_scanned": [
+                    0,
+                    1,
+                    2,
+                    4,
+                    8,
+                    512,
+                    1024,
+                    2048,
+                    4096,
+                    8192,
+                    12288,
+                    16384,
+                    20480,
+                    24576,
+                    28672,
+                    32768,
+                    36864,
+                    40960,
+                    45056,
+                    49152,
+                    53248,
+                    57344,
+                    61440,
+                    65536,
+                    69632,
+                    73728,
+                    77824,
+                    81920,
+                    82339,
+                    86016,
+                    89507,
+                    90019,
+                    90112
+                ],
+                "total_offsets_scanned": 33,
+                "max_offset_scanned": 90112,
+                "file_size": 90531,
+                "coverage_percentage": 99.54,
+                "deep_scan_enabled": true,
+                "scan_strategy": "header+strategic+tail+deep"
+            },
+            "magic_library_detection": {
+                "description": "data",
+                "mime_type": "application/octet-stream"
+            }
+        },
+        "evidence": [
+            {
+                "signature_type": "ZIP",
+                "category": "archive",
+                "offset": 0,
+                "signature_hex": "504b0304",
+                "signature_length": 4
+            }
+        ],
+        "verification_method": "hexdump -C <file> | head -n 100 to verify magic bytes at reported offsets",
+        "failure_reason": null
+    },
+    "container_identification": {
+        "analysis_name": "container_type_identification",
+        "library_or_method": "Signature-based detection",
+        "input_byte_range": "0-1024",
+        "output_value": {
+            "container_type": "ZIP",
+            "is_container": true
+        },
+        "evidence": [
+            {
+                "detected_type": "ZIP",
+                "method": "magic_byte_match"
+            }
+        ],
+        "verification_method": "hexdump -C <file> | head -n 5 to verify container magic bytes",
+        "failure_reason": null
+    },
+    "semantic_file_type": {
+        "analysis_name": "semantic_file_type_resolution",
+        "library_or_method": "Internal structure analysis + olefile/zipfile",
+        "input_byte_range": "0-90531",
+        "output_value": {
+            "container_type": "ZIP",
+            "semantic_file_type": "DOCX",
+            "classification_confidence": "HIGH",
+            "classification_evidence": [
+                {
+                    "type": "ooxml_marker",
+                    "file": "[Content_Types].xml",
+                    "present": true
+                },
+                {
+                    "type": "ooxml_docx",
+                    "paths_found": [
+                        "word/",
+                        "word/document.xml",
+                        "word/fontTable.xml",
+                        "word/styles.xml",
+                        "word/numbering.xml",
+                        "word/settings.xml",
+                        "word/webSettings.xml",
+                        "word/_rels/",
+                        "word/_rels/document.xml.rels"
+                    ],
+                    "missing_components": []
+                }
+            ]
+        },
+        "evidence": [
+            {
+                "type": "ooxml_marker",
+                "file": "[Content_Types].xml",
+                "present": true
+            },
+            {
+                "type": "ooxml_docx",
+                "paths_found": [
+                    "word/",
+                    "word/document.xml",
+                    "word/fontTable.xml",
+                    "word/styles.xml",
+                    "word/numbering.xml",
+                    "word/settings.xml",
+                    "word/webSettings.xml",
+                    "word/_rels/",
+                    "word/_rels/document.xml.rels"
+                ],
+                "missing_components": []
+            }
+        ],
+        "verification_method": "unzip -l <file> for ZIP/OOXML; olefile <file> for OLE; file --mime-type <file>",
+        "failure_reason": null
+    },
+    "extension_analysis": {
+        "analysis_name": "extension_chain_analysis",
+        "library_or_method": "Python pathlib/unicodedata",
+        "input_byte_range": "N/A (filename analysis)",
+        "output_value": {
+            "raw_filename": "cyberbullying-survey.docx",
+            "normalized_filename": "cyberbullying-survey.docx",
+            "extension_chain": [
+                "docx"
+            ],
+            "primary_extension": "docx",
+            "double_extension_detected": false,
+            "hidden_extension_detected": false,
+            "extension_mismatch": false,
+            "unicode_deception": [],
+            "homoglyphs_detected": []
+        },
+        "evidence": [],
+        "verification_method": "ls -la <file> or file properties dialog to view filename; python unicodedata to analyze characters",
+        "failure_reason": null
+    },
+    "filesystem_metadata": {
+        "analysis_name": "filesystem_metadata",
+        "library_or_method": "Python os/stat",
+        "input_byte_range": "N/A (filesystem metadata)",
+        "output_value": {
+            "timestamps": {
+                "created": "2025-09-25T15:37:40.660166",
+                "modified": "2025-09-25T15:37:40.660424",
+                "accessed": "2025-09-25T15:37:40.668331"
+            },
+            "permissions": {
+                "mode_octal": "0o100644",
+                "is_readable": true,
+                "is_writable": true,
+                "is_executable": false,
+                "owner_read": true,
+                "owner_write": true,
+                "owner_execute": false,
+                "group_read": true,
+                "group_write": false,
+                "group_execute": false,
+                "other_read": true,
+                "other_write": false,
+                "other_execute": false
+            },
+            "ownership": {
+                "uid": 501,
+                "gid": 20,
+                "user_name": "shubhamnagar",
+                "group_name": "staff"
+            },
+            "ntfs_ads": {
+                "platform": "Darwin",
+                "detection_attempted": false,
+                "streams_found": [],
+                "status": "NOT_APPLICABLE",
+                "note": "NTFS ADS is Windows-only; current platform does not support"
+            }
+        },
+        "evidence": [
+            {
+                "type": "stat_info",
+                "st_mode": 33188,
+                "st_uid": 501,
+                "st_gid": 20
+            }
+        ],
+        "verification_method": "System stat calls",
+        "failure_reason": null
+    },
+    "advanced_checks": {
+        "analysis_name": "advanced_checks",
+        "library_or_method": "Combined analysis",
+        "input_byte_range": "0-90531",
+        "output_value": {
+            "checks_performed": [
+                "extension_magic_mismatch",
+                "ooxml_completeness",
+                "ooxml_extra_components",
+                "trailing_data",
+                "polyglot_detection",
+                "internal_structure_validation"
+            ],
+            "issues_found": []
+        },
+        "evidence": [],
+        "verification_method": "unzip -t <file> for ZIP validation; hexdump -C <file> | tail for trailing data",
+        "failure_reason": null
+    },
+    "summary": {
+        "container_type": "ZIP",
+        "semantic_file_type": "DOCX",
+        "classification_confidence": "HIGH",
+        "classification_notes": [
+            "Base container is ZIP, resolved to DOCX"
+        ],
+        "detected_deception_flags": [],
+        "file_path": "/Users/shubhamnagar/Downloads/cyberbullying-survey.docx",
+        "file_size": 90531,
+        "analysis_complete": true,
+        "ambiguity": null
+    }
+}
+(venv) shubhamnagar@Shubhams-MacBook-Air File_Analysis_App_v1-main % 
