@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';">
+    <title>File Analysis Dashboard</title>
+    <link rel="stylesheet" href="styles/themes.css">
+    <link rel="stylesheet" href="styles/components.css">
+</head>
+<body class="theme-dark">
+    <!-- Main Application Container -->
+    <div id="app" class="app-container">
+        
+        <!-- Secondary Toolbar -->
+        <div id="toolbar" class="toolbar" role="toolbar" aria-label="Main toolbar">
+            <div class="toolbar-group">
+                <button id="btn-refresh" class="toolbar-btn" title="Refresh Data (F5)" aria-label="Refresh">
+                    ⟳ Refresh
+                </button>
+                <button id="btn-analyze" class="toolbar-btn" title="Analyze File" aria-label="Analyze File">
+                    📄 Analyze
+                </button>
+            </div>
+            <div class="toolbar-group">
+                <select id="case-selector" class="toolbar-select" aria-label="Select Case">
+                    <option value="">-- Select Case --</option>
+                </select>
+                <select id="session-selector" class="toolbar-select" aria-label="Select Session">
+                    <option value="">-- Select Session --</option>
+                </select>
+            </div>
+            <div class="toolbar-group toolbar-right">
+                <span id="backend-status" class="status-indicator" aria-live="polite">
+                    ● Disconnected
+                </span>
+            </div>
+        </div>
+
+        <!-- Central Workspace with Resizable Panels -->
+        <div id="workspace" class="workspace">
+            
+            <!-- Left Panel: Navigation & Overview -->
+            <div id="panel-left" class="panel panel-left resizable" role="region" aria-label="Navigation Panel">
+                <div class="panel-header">
+                    <h2>Records</h2>
+                </div>
+                <div class="panel-content">
+                    <div id="records-list" class="records-list" role="listbox" aria-label="Analysis Records">
+                        <div class="empty-state" aria-live="polite">
+                            <p>No records loaded</p>
+                            <p class="hint">Select a case and session, or analyze a file</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resize Handle -->
+            <div class="resize-handle resize-handle-left" role="separator" aria-orientation="vertical"></div>
+
+            <!-- Center Panel: Main Content -->
+            <div id="panel-center" class="panel panel-center" role="main" aria-label="Main Content">
+                
+                <!-- Tab Navigation -->
+                <div class="panel-tabs" role="tablist" aria-label="Content Tabs">
+                    <button class="tab-btn active" data-tab="file-overview" role="tab" aria-selected="true">
+                        File Overview
+                    </button>
+                    <button class="tab-btn" data-tab="risk-findings" role="tab" aria-selected="false">
+                        Risk & Findings
+                    </button>
+                    <button class="tab-btn" data-tab="metadata" role="tab" aria-selected="false">
+                        Metadata
+                    </button>
+                    <button class="tab-btn" data-tab="hex-viewer" role="tab" aria-selected="false">
+                        Hex Viewer
+                    </button>
+                    <button class="tab-btn" data-tab="strings" role="tab" aria-selected="false">
+                        Strings
+                    </button>
+                    <button class="tab-btn" data-tab="timeline" role="tab" aria-selected="false">
+                        Timeline
+                    </button>
+                </div>
+
+                <!-- Tab Content Areas -->
+                <div class="panel-content">
+                    
+                    <!-- File Overview Tab -->
+                    <div id="tab-file-overview" class="tab-content active" role="tabpanel" aria-labelledby="tab-file-overview-btn">
+                        <div id="file-overview-component"></div>
+                    </div>
+
+                    <!-- Risk & Findings Tab -->
+                    <div id="tab-risk-findings" class="tab-content" role="tabpanel" aria-labelledby="tab-risk-findings-btn">
+                        <div id="risk-panel-component"></div>
+                    </div>
+
+                    <!-- Metadata Tab -->
+                    <div id="tab-metadata" class="tab-content" role="tabpanel" aria-labelledby="tab-metadata-btn">
+                        <div id="metadata-explorer-component"></div>
+                    </div>
+
+                    <!-- Hex Viewer Tab -->
+                    <div id="tab-hex-viewer" class="tab-content" role="tabpanel" aria-labelledby="tab-hex-viewer-btn">
+                        <div id="hex-viewer-component"></div>
+                    </div>
+
+                    <!-- Strings Tab -->
+                    <div id="tab-strings" class="tab-content" role="tabpanel" aria-labelledby="tab-strings-btn">
+                        <div id="strings-viewer-component"></div>
+                    </div>
+
+                    <!-- Timeline Tab -->
+                    <div id="tab-timeline" class="tab-content" role="tabpanel" aria-labelledby="tab-timeline-btn">
+                        <div id="timeline-component"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resize Handle -->
+            <div class="resize-handle resize-handle-right" role="separator" aria-orientation="vertical"></div>
+
+            <!-- Right Panel: Details & Inspection -->
+            <div id="panel-right" class="panel panel-right resizable" role="complementary" aria-label="Details Panel">
+                <div class="panel-header">
+                    <h2>Details</h2>
+                </div>
+                <div class="panel-content">
+                    <div id="heuristics-panel-component"></div>
+                    <div id="findings-list-component"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Status Bar -->
+        <div id="status-bar" class="status-bar" role="status" aria-live="polite">
+            <div class="status-left">
+                <span id="data-load-state" class="status-item">
+                    <span class="status-icon">●</span>
+                    <span class="status-text">Ready</span>
+                </span>
+            </div>
+            <div class="status-center">
+                <span id="status-errors" class="status-item status-errors" hidden>
+                    ⚠ <span class="error-count">0</span> errors
+                </span>
+                <span id="status-warnings" class="status-item status-warnings" hidden>
+                    ⚡ <span class="warning-count">0</span> warnings
+                </span>
+            </div>
+            <div class="status-right">
+                <span id="case-context" class="status-item">
+                    Case: <span class="case-id">None</span>
+                </span>
+                <span id="session-context" class="status-item">
+                    Session: <span class="session-id">None</span>
+                </span>
+                <span id="schema-version" class="status-item">
+                    Schema: v1.0.0
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="error-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="error-modal-title" hidden>
+        <div class="modal-content">
+            <h2 id="error-modal-title" class="modal-title">Error</h2>
+            <p id="error-modal-message" class="modal-message"></p>
+            <button id="error-modal-close" class="btn btn-primary">Close</button>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay" role="alert" aria-busy="true" hidden>
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Loading...</p>
+    </div>
+
+    <!-- Component Scripts -->
+    <script src="components/FileOverview.js"></script>
+    <script src="components/RiskPanel.js"></script>
+    <script src="components/MetadataExplorer.js"></script>
+    <script src="components/FindingsList.js"></script>
+    <script src="components/HeuristicsPanel.js"></script>
+    <script src="components/HexViewer.js"></script>
+    <script src="components/StringsViewer.js"></script>
+    <script src="components/ArchiveTree.js"></script>
+    <script src="components/Timeline.js"></script>
+    <script src="components/DiffView.js"></script>
+    <script src="components/StatusBar.js"></script>
+    
+    <!-- Main Application Script -->
+    <script src="app.js"></script>
+</body>
+</html>
