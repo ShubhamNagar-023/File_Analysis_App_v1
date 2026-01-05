@@ -16,6 +16,15 @@ python-magic>=0.4.27
 # Required for analyzing legacy Office documents (DOC/XLS/PPT)
 olefile>=0.46
 
+# API Server (Production)
+# Flask for REST API server
+flask>=3.0.0
+flask-cors>=4.0.0
+
+# GUI Application (Production)
+# PyQt6 for desktop GUI
+PyQt6>=6.6.0
+
 # ============================================================================
 # OPTIONAL ENHANCEMENTS (Not Required)
 # ============================================================================

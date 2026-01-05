@@ -111,17 +111,36 @@ def cli_mode():
     print("="*70)
     print("\nUsage:")
     print("  python analyze_file.py <file>     - Analyze a file")
+    print("  python api_server.py              - Start API server")
     print("  python -m pytest tests/ -v        - Run tests")
     print("\nExamples:")
     print("  python analyze_file.py test_files/sample.pdf")
     print("  python analyze_file.py /path/to/suspicious-file.exe")
+    print("  python api_server.py --port 5000  - Start on port 5000")
     print("\nResults are saved to exports/ directory.")
     print("="*70 + "\n")
+
+def start_api_server(port=5000):
+    """Start the API server"""
+    print("\nStarting API server...")
+    print(f"Server will be available at http://localhost:{port}")
+    print("Press Ctrl+C to stop.\n")
+    
+    try:
+        result = subprocess.run([sys.executable, 'api_server.py', '--port', str(port)])
+        return result.returncode == 0
+    except KeyboardInterrupt:
+        print("\n\nServer stopped")
+        return True
 
 def main():
     parser = argparse.ArgumentParser(description="File Analysis Application")
     parser.add_argument('--cli', action='store_true', 
                        help='CLI mode only (no UI)')
+    parser.add_argument('--api', action='store_true',
+                       help='Start API server only')
+    parser.add_argument('--port', type=int, default=5000,
+                       help='API server port (default: 5000)')
     parser.add_argument('--analyze', metavar='FILE',
                        help='Analyze a file, then open UI')
     args = parser.parse_args()
@@ -134,6 +153,10 @@ def main():
     deps_status = check_dependencies()
     if deps_status is False:
         return 1
+    
+    # API server mode
+    if args.api:
+        return 0 if start_api_server(args.port) else 1
     
     # CLI-only mode
     if args.cli or deps_status == "cli_only":
@@ -163,7 +186,19 @@ def main():
         cli_mode()
         return 0
     
-    start_ui(db_path)
+    # Start API server in background
+    print("\nStarting API server in background...")
+    api_process = subprocess.Popen([sys.executable, 'api_server.py', '--port', str(args.port)])
+    time.sleep(2)  # Give server time to start
+    
+    try:
+        start_ui(db_path)
+    finally:
+        # Stop API server
+        print("\nStopping API server...")
+        api_process.terminate()
+        api_process.wait()
+    
     return 0
 
 if __name__ == '__main__':
