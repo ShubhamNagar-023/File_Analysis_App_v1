@@ -113,3 +113,4 @@ Thumbs.db
 # Test files
 /tmp/
 *.tmp
+test_files/
