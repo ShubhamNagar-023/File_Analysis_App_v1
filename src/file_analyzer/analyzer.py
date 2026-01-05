@@ -391,20 +391,17 @@ class FileAnalyzer:
                     'error': str(e),
                 }
         
-        # Check for TAR at different offsets
-        tar_magic_offsets = [0, 257]  # ustar at 257
-        for offset in tar_magic_offsets:
-            if len(self.file_data) >= offset + 8:
-                if self.file_data[offset + 257:offset + 262] == b'ustar':
-                    signatures_found.append({
-                        'signature_type': 'TAR',
-                        'category': 'archive',
-                        'offset': offset,
-                        'signature_hex': self.file_data[offset + 257:offset + 263].hex(),
-                        'signature_length': 6,
-                        'note': 'ustar format',
-                    })
-                    break
+        # Check for TAR format (ustar signature at offset 257)
+        if len(self.file_data) >= 263:  # Need at least 263 bytes for ustar check
+            if self.file_data[257:262] == b'ustar':
+                signatures_found.append({
+                    'signature_type': 'TAR',
+                    'category': 'archive',
+                    'offset': 0,
+                    'signature_hex': self.file_data[257:263].hex(),
+                    'signature_length': 6,
+                    'note': 'ustar format at offset 257',
+                })
         
         # Detect overlapping signatures
         if len(signatures_found) > 1:
@@ -816,13 +813,13 @@ class FileAnalyzer:
         sample = self.file_data[:8192]
         
         # Count text-like bytes
-        text_chars = 0
+        text_chars = 0.0  # Use float for consistent type
         binary_chars = 0
         
         # Text-like: printable ASCII, common control chars
         for byte in sample:
             if byte in range(32, 127) or byte in [9, 10, 13]:  # Printable + tab, LF, CR
-                text_chars += 1
+                text_chars += 1.0
             elif byte in [0]:  # Null byte is binary indicator
                 binary_chars += 10  # Heavily penalize null bytes
             elif byte in range(1, 32):  # Other control characters
@@ -952,12 +949,16 @@ class FileAnalyzer:
             'ARCHIVE_7Z': ['7z'],
             'ARCHIVE_RAR': ['rar'],
             'EXECUTABLE_PE': ['exe', 'dll', 'sys'],
-            'EXECUTABLE_ELF': ['so', 'elf', ''],
-            'PLAIN_TEXT': ['txt', 'text', 'log', 'md', 'csv', 'json', 'xml', 'html', 'htm', 'css', 'js', 'py', 'c', 'h', 'cpp', 'java', 'sh', 'bat', ''],
+            'EXECUTABLE_ELF': ['so', 'elf', 'bin', 'out'],
+            'PLAIN_TEXT': ['txt', 'text', 'log', 'md', 'csv', 'json', 'xml', 'html', 'htm', 'css', 'js', 'py', 'c', 'h', 'cpp', 'java', 'sh', 'bat', 'cfg', 'conf', 'ini', 'yml', 'yaml'],
         }
         
+        # Handle files without extension explicitly
+        has_extension = bool(extension)
+        
         if semantic_type in expected_extensions:
-            if extension not in expected_extensions[semantic_type]:
+            valid_extensions = expected_extensions[semantic_type]
+            if has_extension and extension not in valid_extensions:
                 result['output_value']['extension_mismatch'] = True
                 result['evidence'].append({
                     'type': 'extension_mismatch',
@@ -1231,8 +1232,12 @@ class FileAnalyzer:
         
         # Mark as ambiguous if evidence conflicts
         is_ambiguous = False
-        if len(set(s.get('signature_type') for s in 
-                   self.analysis_results.get('magic_detection', {}).get('output_value', {}).get('signatures_found', []))) > 1:
+        magic_detection = self.analysis_results.get('magic_detection', {})
+        magic_output = magic_detection.get('output_value', {})
+        signatures_found = magic_output.get('signatures_found', [])
+        unique_signature_types = set(s.get('signature_type') for s in signatures_found)
+        
+        if len(unique_signature_types) > 1:
             is_ambiguous = True
             notes.append('AMBIGUOUS: Multiple conflicting signatures detected')
         
