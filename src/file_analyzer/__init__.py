@@ -7,6 +7,22 @@ from .risk_scorer import RiskScorer, compute_risk_score, explain_score
 from .correlator import SessionCorrelator, correlate_session
 from .part3_analyzer import Part3Analyzer, analyze_part3, full_analysis
 
+# PART 4: Persistence, CLI & IPC
+from .part4 import (
+    SCHEMAS,
+    validate_schema,
+    ValidationError,
+    AnalysisDatabase,
+    DatabaseError,
+    IntegrityError,
+    cli_main,
+    IPCHandler,
+    IPCRequest,
+    IPCResponse,
+    Exporter,
+    ExportFormat,
+)
+
 __all__ = [
     # PART 1
     'FileAnalyzer',
@@ -28,4 +44,17 @@ __all__ = [
     'Part3Analyzer',
     'analyze_part3',
     'full_analysis',
+    # PART 4
+    'SCHEMAS',
+    'validate_schema',
+    'ValidationError',
+    'AnalysisDatabase',
+    'DatabaseError',
+    'IntegrityError',
+    'cli_main',
+    'IPCHandler',
+    'IPCRequest',
+    'IPCResponse',
+    'Exporter',
+    'ExportFormat',
 ]
