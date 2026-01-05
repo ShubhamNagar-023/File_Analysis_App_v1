@@ -572,6 +572,7 @@ python -m pytest tests/test_part4.py -v
 
 - **[README.md](README.md)** - Main documentation (this file)
 - **[EXPORT_GUIDE.md](EXPORT_GUIDE.md)** - ⭐ **NEW**: Multi-format export and reporting guide
+- **[PDF_EXPORT_GUIDE.md](PDF_EXPORT_GUIDE.md)** - ⭐ **NEW**: PDF export options and WeasyPrint setup
 - **[PRODUCTION_READINESS.md](PRODUCTION_READINESS.md)** - ⭐ **NEW**: Production deployment guide
 - **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - Comprehensive testing instructions
 - **[LIBRARY_RATIONALE.md](LIBRARY_RATIONALE.md)** - Library usage and architecture decisions

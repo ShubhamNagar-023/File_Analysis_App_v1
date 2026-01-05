@@ -17,18 +17,18 @@ python-magic>=0.4.27
 olefile>=0.46
 
 # ============================================================================
-# REQUIRED FOR EXPORT FEATURES
-# ============================================================================
-
-# PDF Generation (for export reports)
-# WeasyPrint converts HTML to PDF - required for PDF export feature
-weasyprint>=60.0
-
-# ============================================================================
 # OPTIONAL ENHANCEMENTS (Not Required)
 # ============================================================================
 #
 # Uncomment to enable additional features:
+#
+# --- PDF Generation (for HTML-based PDF export reports) ---
+# NOTE: WeasyPrint requires system libraries (cairo, pango, gdk-pixbuf, glib)
+# On macOS: brew install cairo pango gdk-pixbuf glib
+# On Ubuntu/Debian: apt-get install libcairo2 libpango-1.0-0 libgdk-pixbuf2.0-0
+# See: https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#installation
+# If not installed, PDF exports will use a text-based format instead.
+# weasyprint>=60.0
 #
 # --- YARA Rule Support ---
 # yara-python>=4.0.0

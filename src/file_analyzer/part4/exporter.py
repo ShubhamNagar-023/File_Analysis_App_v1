@@ -25,6 +25,15 @@ from typing import Any, Dict, List, Optional
 from .persistence import AnalysisDatabase
 from .schemas import SCHEMA_VERSION
 
+# Try to import WeasyPrint, but make it optional
+try:
+    from weasyprint import HTML as WeasyprintHTML
+    WEASYPRINT_AVAILABLE = True
+except (ImportError, OSError) as e:
+    # OSError can occur when system libraries are missing (e.g., libgobject on macOS)
+    WEASYPRINT_AVAILABLE = False
+    WeasyprintHTML = None
+
 
 class ExportFormat(str, Enum):
     """Supported export formats."""
@@ -254,24 +263,22 @@ class Exporter:
             output_path = output_path.with_suffix('.pdf')
         
         # Generate HTML first, then convert to PDF
-        # For simplicity, we'll write a basic PDF-like text file
-        # In production, you would use a library like reportlab or weasyprint
+        html_content = self._generate_html_report(data)
         
-        try:
-            # Try to use weasyprint if available
-            from weasyprint import HTML as WeasyprintHTML
-            
-            html_content = self._generate_html_report(data)
-            WeasyprintHTML(string=html_content).write_pdf(str(output_path))
-        except ImportError:
-            # Fallback: write HTML with PDF extension note
-            html_content = self._generate_html_report(data)
-            # Write as HTML with a note about PDF
-            html_path = output_path.with_suffix('.html')
-            with open(html_path, 'w', encoding='utf-8') as f:
-                f.write(html_content)
-            
-            # Create a simple text-based PDF alternative
+        if WEASYPRINT_AVAILABLE:
+            # Use WeasyPrint to generate PDF from HTML
+            try:
+                WeasyprintHTML(string=html_content).write_pdf(str(output_path))
+            except Exception as e:
+                # If WeasyPrint fails for any reason, fallback to text
+                print(f"Warning: WeasyPrint PDF generation failed ({e}), using text fallback")
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    f.write(self._generate_text_report(data))
+        else:
+            # Fallback: write a text-based report when WeasyPrint is not available
+            print("Note: WeasyPrint not available. PDF will be in text format.")
+            print("To generate HTML-based PDFs, install system dependencies and WeasyPrint:")
+            print("  See: https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#installation")
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(self._generate_text_report(data))
         
@@ -376,49 +383,157 @@ class Exporter:
         parts.append(f'    <p>Severity: <span class="severity-{severity}">{severity.upper()}</span></p>')
         parts.append('  </div>')
         
-        # Triggered heuristics
-        triggered = [h for h in heuristics if h.get('triggered')]
-        if triggered:
+        # Detailed Heuristics Analysis
+        if heuristics:
+            triggered = [h for h in heuristics if h.get('triggered')]
+            not_triggered = [h for h in heuristics if not h.get('triggered')]
+            
             parts.append('  <div class="section">')
-            parts.append('    <h2>Triggered Heuristics</h2>')
-            for h in triggered:
-                sev = h.get('severity', 'informational')
-                parts.append(f'    <div class="heuristic triggered">')
-                parts.append(f'      <h3>{html.escape(h.get("name", ""))}</h3>')
-                parts.append(f'      <p><strong>ID:</strong> <code>{html.escape(h.get("heuristic_id", ""))}</code></p>')
-                parts.append(f'      <p><strong>Severity:</strong> <span class="severity-{sev}">{sev}</span></p>')
-                parts.append(f'      <p><strong>Weight:</strong> {h.get("weight", 0)}</p>')
-                parts.append(f'      <p>{html.escape(h.get("explanation", ""))}</p>')
-                parts.append('    </div>')
+            parts.append(f'    <h2>Heuristics Analysis ({len(triggered)} triggered, {len(not_triggered)} not triggered)</h2>')
+            
+            if triggered:
+                parts.append('    <h3>Triggered Heuristics (Complete Details)</h3>')
+                for h in triggered:
+                    parts.append(f'    <div class="heuristic triggered">')
+                    parts.append(f'      <h4>{html.escape(h.get("name", ""))}</h4>')
+                    
+                    # Display ALL fields from the heuristic, just like JSON
+                    parts.append('      <table>')
+                    parts.append('        <tr><th style="width: 30%">Field</th><th>Value</th></tr>')
+                    
+                    # Sort keys for consistent display
+                    for key in sorted(h.keys()):
+                        value = h[key]
+                        # Format value appropriately
+                        if isinstance(value, dict):
+                            value_html = '<pre><code>' + html.escape(json.dumps(value, indent=2, default=str)) + '</code></pre>'
+                        elif isinstance(value, (list, tuple)):
+                            value_html = '<pre><code>' + html.escape(json.dumps(value, indent=2, default=str)) + '</code></pre>'
+                        elif key in ['heuristic_id', 'record_id']:
+                            value_html = f'<code>{html.escape(str(value))}</code>'
+                        elif key == 'severity':
+                            sev = str(value)
+                            value_html = f'<span class="severity-{sev}">{html.escape(sev)}</span>'
+                        else:
+                            value_html = html.escape(str(value))
+                        
+                        parts.append(f'        <tr><td><strong>{html.escape(key)}</strong></td><td>{value_html}</td></tr>')
+                    
+                    parts.append('      </table>')
+                    parts.append('    </div>')
+            
+            if not_triggered:
+                parts.append('    <h3>Evaluated But Not Triggered (Complete Details)</h3>')
+                for h in not_triggered:
+                    parts.append(f'    <div class="heuristic">')
+                    parts.append(f'      <h4>{html.escape(h.get("name", ""))}</h4>')
+                    
+                    # Display ALL fields from the heuristic, just like JSON
+                    parts.append('      <table>')
+                    parts.append('        <tr><th style="width: 30%">Field</th><th>Value</th></tr>')
+                    
+                    # Sort keys for consistent display
+                    for key in sorted(h.keys()):
+                        value = h[key]
+                        # Format value appropriately
+                        if isinstance(value, dict):
+                            value_html = '<pre><code>' + html.escape(json.dumps(value, indent=2, default=str)) + '</code></pre>'
+                        elif isinstance(value, (list, tuple)):
+                            value_html = '<pre><code>' + html.escape(json.dumps(value, indent=2, default=str)) + '</code></pre>'
+                        elif key in ['heuristic_id', 'record_id']:
+                            value_html = f'<code>{html.escape(str(value))}</code>'
+                        elif key == 'severity':
+                            sev = str(value)
+                            value_html = f'<span class="severity-{sev}">{html.escape(sev)}</span>'
+                        else:
+                            value_html = html.escape(str(value))
+                        
+                        parts.append(f'        <tr><td><strong>{html.escape(key)}</strong></td><td>{value_html}</td></tr>')
+                    
+                    parts.append('      </table>')
+                    parts.append('    </div>')
+            
             parts.append('  </div>')
         
-        # Findings summary
+        # Detailed Findings
         if findings:
             parts.append('  <div class="section">')
-            parts.append('    <h2>Findings Summary</h2>')
-            parts.append(f'    <p>Total findings: {len(findings)}</p>')
+            parts.append(f'    <h2>Detailed Findings ({len(findings)} total)</h2>')
             
-            # Group by type
+            # Group by type for summary
             finding_types = {}
             for f in findings:
                 ft = f.get('finding_type', 'unknown')
                 finding_types[ft] = finding_types.get(ft, 0) + 1
             
+            parts.append('    <h3>Summary by Type</h3>')
             parts.append('    <table>')
             parts.append('      <tr><th>Finding Type</th><th>Count</th></tr>')
             for ft, count in sorted(finding_types.items()):
                 parts.append(f'      <tr><td>{html.escape(ft)}</td><td>{count}</td></tr>')
             parts.append('    </table>')
+            
+            # Individual findings - show ALL fields like JSON format
+            parts.append('    <h3>Individual Findings (Complete Details)</h3>')
+            for idx, f in enumerate(findings, 1):
+                ft = f.get('finding_type', 'unknown')
+                parts.append(f'    <div class="finding">')
+                parts.append(f'      <h4>Finding #{idx}: {html.escape(ft)}</h4>')
+                
+                # Display ALL fields from the finding, just like JSON
+                parts.append('      <table>')
+                parts.append('        <tr><th style="width: 30%">Field</th><th>Value</th></tr>')
+                
+                # Sort keys for consistent display
+                for key in sorted(f.keys()):
+                    value = f[key]
+                    # Format value appropriately
+                    if isinstance(value, dict):
+                        value_html = '<pre><code>' + html.escape(json.dumps(value, indent=2, default=str)) + '</code></pre>'
+                    elif isinstance(value, (list, tuple)):
+                        value_html = '<pre><code>' + html.escape(json.dumps(value, indent=2, default=str)) + '</code></pre>'
+                    elif key in ['finding_id', 'record_id', 'heuristic_id']:
+                        value_html = f'<code>{html.escape(str(value))}</code>'
+                    else:
+                        value_html = html.escape(str(value))
+                    
+                    parts.append(f'        <tr><td><strong>{html.escape(key)}</strong></td><td>{value_html}</td></tr>')
+                
+                parts.append('      </table>')
+                parts.append('    </div>')
+            
             parts.append('  </div>')
+        
+        # Complete Analysis Data
+        parts.append('  <div class="section">')
+        parts.append('    <h2>Complete Analysis Data</h2>')
+        
+        # PART 1 Data
+        if record.get('part1'):
+            parts.append('    <h3>PART 1: File Ingestion & Type Resolution</h3>')
+            parts.append('    <pre><code>' + html.escape(json.dumps(record.get('part1'), indent=2, default=str)) + '</code></pre>')
+        
+        # PART 2 Data
+        if record.get('part2'):
+            parts.append('    <h3>PART 2: Deep File-Type-Aware Static Analysis</h3>')
+            parts.append('    <pre><code>' + html.escape(json.dumps(record.get('part2'), indent=2, default=str)) + '</code></pre>')
+        
+        # PART 3 Data
+        if record.get('part3'):
+            parts.append('    <h3>PART 3: Rules, Correlation & Risk Scoring</h3>')
+            parts.append('    <pre><code>' + html.escape(json.dumps(record.get('part3'), indent=2, default=str)) + '</code></pre>')
+        
+        parts.append('  </div>')
         
         # Provenance
         provenance = record.get('provenance', {})
         parts.append('  <div class="section">')
-        parts.append('    <h2>Provenance</h2>')
+        parts.append('    <h2>Provenance & Metadata</h2>')
         parts.append('    <table>')
         parts.append(f'      <tr><th>Schema Version</th><td>{html.escape(record.get("schema_version", ""))}</td></tr>')
         parts.append(f'      <tr><th>Tool Version</th><td>{html.escape(record.get("tool_version", ""))}</td></tr>')
         parts.append(f'      <tr><th>Created At</th><td>{html.escape(provenance.get("created_at", ""))}</td></tr>')
+        parts.append(f'      <tr><th>Session ID</th><td><code>{html.escape(record.get("session_id", ""))}</code></td></tr>')
         parts.append('    </table>')
         parts.append('  </div>')
         
@@ -531,10 +646,10 @@ class Exporter:
         return parts
     
     def _generate_text_report(self, data: Dict[str, Any]) -> str:
-        """Generate a text-based report (fallback for PDF)."""
+        """Generate a detailed text-based report (fallback for PDF)."""
         lines = []
         lines.append("=" * 80)
-        lines.append("FILE ANALYSIS REPORT")
+        lines.append("FILE ANALYSIS REPORT - DETAILED")
         lines.append("=" * 80)
         lines.append("")
         lines.append(f"Export Type: {data.get('export_type', 'unknown')}")
@@ -547,6 +662,10 @@ class Exporter:
         
         if export_type == 'record':
             record = data.get('record', {})
+            findings = data.get('findings', [])
+            heuristics = data.get('heuristics', [])
+            
+            lines.append("")
             lines.append("FILE INFORMATION")
             lines.append("-" * 80)
             lines.append(f"Record ID: {record.get('record_id', '')}")
@@ -555,30 +674,171 @@ class Exporter:
             lines.append(f"File Size: {record.get('file_size', 0):,} bytes")
             lines.append(f"SHA256: {record.get('sha256_hash', '')}")
             lines.append(f"File Type: {record.get('semantic_file_type', '')}")
+            lines.append(f"Analysis Date: {record.get('created_at', '')}")
+            
             lines.append("")
             lines.append("RISK ASSESSMENT")
             lines.append("-" * 80)
             lines.append(f"Risk Score: {record.get('risk_score', 0):.1f}/100")
             lines.append(f"Severity: {record.get('severity', 'informational').upper()}")
             
+            # Heuristics
+            if heuristics:
+                triggered = [h for h in heuristics if h.get('triggered')]
+                not_triggered = [h for h in heuristics if not h.get('triggered')]
+                
+                lines.append("")
+                lines.append(f"HEURISTICS ANALYSIS ({len(triggered)} triggered, {len(not_triggered)} not triggered)")
+                lines.append("-" * 80)
+                
+                if triggered:
+                    lines.append("")
+                    lines.append("Triggered Heuristics (Complete Details):")
+                    for idx, h in enumerate(triggered, 1):
+                        lines.append(f"\n  Triggered Heuristic #{idx}: {h.get('name', '')}")
+                        # Show ALL fields
+                        for key in sorted(h.keys()):
+                            if key == 'name':
+                                continue  # Already shown in header
+                            value = h[key]
+                            if isinstance(value, (dict, list)):
+                                lines.append(f"    {key}: {json.dumps(value, indent=6, default=str)}")
+                            else:
+                                lines.append(f"    {key}: {value}")
+                        lines.append("")
+                
+                if not_triggered:
+                    lines.append("")
+                    lines.append("Evaluated But Not Triggered (Complete Details):")
+                    for idx, h in enumerate(not_triggered, 1):
+                        lines.append(f"\n  Not Triggered Heuristic #{idx}: {h.get('name', '')}")
+                        # Show ALL fields
+                        for key in sorted(h.keys()):
+                            if key == 'name':
+                                continue  # Already shown in header
+                            value = h[key]
+                            if isinstance(value, (dict, list)):
+                                lines.append(f"    {key}: {json.dumps(value, indent=6, default=str)}")
+                            else:
+                                lines.append(f"    {key}: {value}")
+            
+            # Findings
+            if findings:
+                lines.append("")
+                lines.append(f"DETAILED FINDINGS ({len(findings)} total)")
+                lines.append("-" * 80)
+                
+                # Group by type
+                finding_types = {}
+                for f in findings:
+                    ft = f.get('finding_type', 'unknown')
+                    finding_types[ft] = finding_types.get(ft, 0) + 1
+                
+                lines.append("")
+                lines.append("Summary by Type:")
+                for ft, count in sorted(finding_types.items()):
+                    lines.append(f"  {ft}: {count}")
+                
+                lines.append("")
+                lines.append("Individual Findings (Complete Details):")
+                for idx, f in enumerate(findings, 1):
+                    lines.append(f"\n  Finding #{idx}: {f.get('finding_type', 'unknown')}")
+                    # Show ALL fields
+                    for key in sorted(f.keys()):
+                        if key == 'finding_type':
+                            continue  # Already shown in header
+                        value = f[key]
+                        if isinstance(value, (dict, list)):
+                            lines.append(f"    {key}: {json.dumps(value, indent=6, default=str)}")
+                        else:
+                            lines.append(f"    {key}: {value}")
+            
+            # Complete data sections
+            lines.append("")
+            lines.append("COMPLETE ANALYSIS DATA")
+            lines.append("-" * 80)
+            
+            if record.get('part1'):
+                lines.append("")
+                lines.append("PART 1: File Ingestion & Type Resolution")
+                lines.append(json.dumps(record.get('part1'), indent=2, default=str))
+            
+            if record.get('part2'):
+                lines.append("")
+                lines.append("PART 2: Deep File-Type-Aware Static Analysis")
+                lines.append(json.dumps(record.get('part2'), indent=2, default=str))
+            
+            if record.get('part3'):
+                lines.append("")
+                lines.append("PART 3: Rules, Correlation & Risk Scoring")
+                lines.append(json.dumps(record.get('part3'), indent=2, default=str))
+            
+            # Provenance
+            lines.append("")
+            lines.append("PROVENANCE & METADATA")
+            lines.append("-" * 80)
+            lines.append(f"Schema Version: {record.get('schema_version', '')}")
+            lines.append(f"Tool Version: {record.get('tool_version', '')}")
+            lines.append(f"Session ID: {record.get('session_id', '')}")
+            provenance = record.get('provenance', {})
+            lines.append(f"Created At: {provenance.get('created_at', '')}")
+            
         elif export_type == 'session':
             session = data.get('session', {})
+            records = data.get('records', [])
+            
+            lines.append("")
             lines.append("SESSION INFORMATION")
             lines.append("-" * 80)
             lines.append(f"Session ID: {session.get('session_id', '')}")
             lines.append(f"Case ID: {session.get('case_id', '')}")
+            lines.append(f"Name: {session.get('name', '') or 'N/A'}")
             lines.append(f"Status: {session.get('status', '')}")
-            lines.append(f"Files Analyzed: {data.get('record_count', 0)}")
+            lines.append(f"Created: {session.get('created_at', '')}")
+            lines.append(f"Files Analyzed: {len(records)}")
+            
+            if records:
+                lines.append("")
+                lines.append("ANALYSIS RECORDS")
+                lines.append("-" * 80)
+                for rec_data in records:
+                    record = rec_data.get('record', {})
+                    findings = rec_data.get('findings', [])
+                    heuristics = rec_data.get('heuristics', [])
+                    triggered = len([h for h in heuristics if h.get('triggered')])
+                    
+                    lines.append(f"\n  {record.get('file_name', '')}")
+                    lines.append(f"    Type: {record.get('semantic_file_type', '')}")
+                    lines.append(f"    Risk Score: {record.get('risk_score', 0):.1f}")
+                    lines.append(f"    Severity: {record.get('severity', '')}")
+                    lines.append(f"    Findings: {len(findings)}, Heuristics: {triggered}")
             
         elif export_type == 'case':
             case = data.get('case', {})
+            sessions = data.get('sessions', [])
+            
+            lines.append("")
             lines.append("CASE INFORMATION")
             lines.append("-" * 80)
             lines.append(f"Case ID: {case.get('case_id', '')}")
             lines.append(f"Name: {case.get('name', '')}")
+            lines.append(f"Description: {case.get('description', '') or 'N/A'}")
             lines.append(f"Status: {case.get('status', '')}")
-            lines.append(f"Sessions: {data.get('session_count', 0)}")
+            lines.append(f"Created: {case.get('created_at', '')}")
+            lines.append(f"Sessions: {len(sessions)}")
             lines.append(f"Total Records: {data.get('total_record_count', 0)}")
+            
+            if sessions:
+                lines.append("")
+                lines.append("SESSIONS")
+                lines.append("-" * 80)
+                for sess_data in sessions:
+                    session = sess_data.get('session', {})
+                    records = sess_data.get('records', [])
+                    lines.append(f"\n  {session.get('name', '') or session.get('session_id', '')}")
+                    lines.append(f"    Session ID: {session.get('session_id', '')}")
+                    lines.append(f"    Status: {session.get('status', '')}")
+                    lines.append(f"    Files Analyzed: {len(records)}")
         
         lines.append("")
         lines.append("=" * 80)
