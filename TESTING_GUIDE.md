@@ -1,8 +1,8 @@
-# File Analysis Application - PART 1 Testing Guide
+# File Analysis Application - Testing Guide
 
-**Version:** 1.0  
+**Version:** 2.0  
 **Date:** 2026-01-05  
-**Purpose:** Comprehensive testing instructions for PART 1 functionality
+**Purpose:** Comprehensive testing instructions for PART 1 and PART 2 functionality
 
 ---
 
@@ -11,19 +11,21 @@
 1. [Overview](#overview)
 2. [Test Environment Setup](#test-environment-setup)
 3. [Running Tests](#running-tests)
-4. [Test Coverage](#test-coverage)
-5. [Manual Testing Guide](#manual-testing-guide)
-6. [Expected Outputs](#expected-outputs)
-7. [Troubleshooting](#troubleshooting)
-8. [Advanced Testing Scenarios](#advanced-testing-scenarios)
+4. [PART 1 Test Coverage](#part-1-test-coverage)
+5. [PART 2 Test Coverage](#part-2-test-coverage)
+6. [Manual Testing Guide](#manual-testing-guide)
+7. [Expected Outputs](#expected-outputs)
+8. [Troubleshooting](#troubleshooting)
+9. [Advanced Testing Scenarios](#advanced-testing-scenarios)
 
 ---
 
 ## Overview
 
-This guide provides complete testing instructions for PART 1 of the File Analysis Application, covering:
-- Automated unit tests (42 test cases)
-- Manual testing procedures
+This guide provides complete testing instructions for the File Analysis Application, covering:
+- **PART 1:** Automated unit tests (42 test cases)
+- **PART 2:** Automated unit tests (19 test cases)
+- Manual testing procedures for both parts
 - Expected output validation
 - Edge case testing
 - Performance verification
@@ -38,6 +40,14 @@ This guide provides complete testing instructions for PART 1 of the File Analysi
 6. **Extension & Deception Analysis** - Unicode deception, byte offsets
 7. **Filesystem Metadata** - Timestamps, permissions, NTFS ADS
 8. **Advanced Checks** - Extension mismatch, trailing data, polyglot
+
+### What PART 2 Tests
+
+1. **Universal Static Analysis** - Entropy, strings, anomalies (all file types)
+2. **Container-Level Analysis** - ZIP/OLE structure validation
+3. **File-Type-Specific Analysis** - Deep analysis based on semantic type
+4. **Output Format** - Proper finding structure and grouping
+5. **Error Handling** - Graceful handling of errors and edge cases
 
 ---
 
@@ -106,13 +116,31 @@ python -m src.file_analyzer.analyzer --help
 
 ## Running Tests
 
-### Quick Test Run
+### Quick Test Run (All Tests)
 
 ```bash
-# Run all tests (default)
+# Run all tests (PART 1 + PART 2)
+python -m pytest tests/ -v
+
+# Expected output: 61 passed (42 PART 1 + 19 PART 2)
+```
+
+### Run PART 1 Tests Only
+
+```bash
+# Run all PART 1 tests
 python -m pytest tests/test_analyzer.py -v
 
-# Expected output: 42 passed in ~0.3-0.5s
+# Expected output: 42 passed in ~0.5s
+```
+
+### Run PART 2 Tests Only
+
+```bash
+# Run all PART 2 tests
+python -m pytest tests/test_deep_analyzer.py -v
+
+# Expected output: 19 passed in ~0.1s
 ```
 
 ### Test Execution Options
@@ -178,9 +206,9 @@ python -m pytest tests/test_analyzer.py -v --tb=short
 
 ---
 
-## Test Coverage
+## PART 1 Test Coverage
 
-### Complete Test Suite (42 Tests)
+### Complete PART 1 Test Suite (42 Tests)
 
 #### File Ingestion (4 tests)
 ```bash
@@ -416,9 +444,104 @@ python -m pytest tests/test_analyzer.py::TestAmbiguityHandling -v
 
 ---
 
+## PART 2 Test Coverage
+
+### Complete PART 2 Test Suite (19 Tests)
+
+#### Universal Analysis (5 tests)
+```bash
+python -m pytest tests/test_deep_analyzer.py::TestUniversalAnalysis -v
+```
+
+| Test | Purpose |
+|------|---------|
+| `test_global_entropy_calculation` | Verify Shannon entropy calculation |
+| `test_section_entropy_calculation` | Test section-wise entropy with anomalies |
+| `test_printable_string_extraction` | Extract and classify strings |
+| `test_trailing_data_detection_zip` | Detect trailing data in ZIP files |
+| `test_structural_anomalies_null_padding` | Detect padding abuse and slack space |
+
+**Expected Result:** 5/5 passed
+
+---
+
+#### Container Analysis (2 tests)
+```bash
+python -m pytest tests/test_deep_analyzer.py::TestContainerAnalysis -v
+```
+
+| Test | Purpose |
+|------|---------|
+| `test_zip_container_analysis` | Analyze ZIP container structure |
+| `test_ooxml_container_analysis` | Analyze OOXML container with validation |
+
+**Expected Result:** 2/2 passed
+
+---
+
+#### File-Type-Specific Analysis (6 tests)
+```bash
+python -m pytest tests/test_deep_analyzer.py::TestFileTypeSpecificAnalysis -v
+```
+
+| Test | Purpose |
+|------|---------|
+| `test_plain_text_analysis` | Plain text encoding and consistency |
+| `test_jpeg_image_analysis` | JPEG structure and metadata |
+| `test_png_image_analysis` | PNG chunk validation |
+| `test_pdf_analysis` | PDF structure and object analysis |
+| `test_office_ooxml_analysis` | OOXML parts and relationships |
+| `test_archive_analysis` | Archive entry enumeration |
+
+**Expected Result:** 6/6 passed
+
+---
+
+#### Output Format (3 tests)
+```bash
+python -m pytest tests/test_deep_analyzer.py::TestOutputFormat -v
+```
+
+| Test | Purpose |
+|------|---------|
+| `test_finding_structure` | Verify finding format consistency |
+| `test_findings_grouped_correctly` | Validate finding categorization |
+| `test_summary_statistics` | Verify summary block completeness |
+
+**Expected Result:** 3/3 passed
+
+---
+
+#### Error Handling (2 tests)
+```bash
+python -m pytest tests/test_deep_analyzer.py::TestErrorHandling -v
+```
+
+| Test | Purpose |
+|------|---------|
+| `test_empty_file_handling` | Handle zero-byte files gracefully |
+| `test_nonexistent_file` | Handle missing files with errors |
+
+**Expected Result:** 2/2 passed
+
+---
+
+#### Convenience Function (1 test)
+```bash
+python -m pytest tests/test_deep_analyzer.py::TestConvenienceFunction -v
+```
+
+| Test | Purpose |
+|------|---------|
+| `test_deep_analyze_file_function` | Test convenience function wrapper |
+
+**Expected Result:** 1/1 passed
+
+---
+
 ## Manual Testing Guide
 
-### Basic Manual Test
+### PART 1: Basic Manual Test
 
 #### 1. Create Test File
 
@@ -508,9 +631,115 @@ python -m src.file_analyzer.analyzer /tmp/test.zip | python -m json.tool
 
 ---
 
+### PART 2: Manual Testing
+
+#### 1. Create Test File
+
+```bash
+echo "This is a test file" > /tmp/test.txt
+```
+
+#### 2. Run PART 1 + PART 2 Analysis
+
+```python
+from src.file_analyzer.analyzer import analyze_file
+from src.file_analyzer.deep_analyzer import deep_analyze_file
+import json
+
+# Run PART 1
+part1_results = analyze_file('/tmp/test.txt')
+print("PART 1 completed")
+
+# Run PART 2 using PART 1 results
+part2_results = deep_analyze_file('/tmp/test.txt', part1_results)
+print(json.dumps(part2_results, indent=2))
+```
+
+#### 3. Expected PART 2 Output Structure
+
+```json
+{
+  "universal": [
+    {
+      "finding_id": "F0001_global_entropy_0",
+      "finding_type": "global_entropy",
+      "semantic_file_type": "PLAIN_TEXT",
+      "byte_offset_start": 0,
+      "byte_offset_end": 37,
+      "extracted_value": {
+        "entropy": 4.5,
+        "entropy_class": "LOW"
+      },
+      "confidence": "HIGH"
+    }
+  ],
+  "container_level": [],
+  "file_type_specific": [
+    {
+      "finding_id": "F0004_text_encoding_0",
+      "finding_type": "text_encoding",
+      "extracted_value": {
+        "encoding": "UTF-8",
+        "bom_detected": null
+      }
+    }
+  ],
+  "summary": {
+    "total_findings": 4,
+    "semantic_file_type": "PLAIN_TEXT",
+    "universal_findings": 3,
+    "container_findings": 0,
+    "file_type_specific_findings": 1
+  }
+}
+```
+
+### PART 2: Test Different File Types
+
+#### JPEG Image (Deep Analysis)
+```python
+from src.file_analyzer.analyzer import analyze_file
+from src.file_analyzer.deep_analyzer import deep_analyze_file
+
+part1 = analyze_file('/path/to/image.jpg')
+part2 = deep_analyze_file('/path/to/image.jpg', part1)
+```
+
+**Expected PART 2 Findings:**
+- Universal entropy analysis
+- JPEG-specific structure analysis
+- EXIF metadata extraction (if present)
+- Image dimension validation
+
+#### PDF Document (Deep Analysis)
+```python
+part1 = analyze_file('/path/to/document.pdf')
+part2 = deep_analyze_file('/path/to/document.pdf', part1)
+```
+
+**Expected PART 2 Findings:**
+- Universal entropy and string extraction
+- PDF object count and validation
+- JavaScript detection (if present)
+- Embedded file detection
+
+#### DOCX Document (Deep Analysis)
+```python
+part1 = analyze_file('/path/to/document.docx')
+part2 = deep_analyze_file('/path/to/document.docx', part1)
+```
+
+**Expected PART 2 Findings:**
+- ZIP container analysis (entries, compression)
+- OOXML parts validation
+- Relationship (.rels) integrity
+- Macro detection (VBA project)
+
+---
+
 ## Expected Outputs
 
-### Output Block Structure
+### PART 1: Output Block Structure
 
 Every analysis block should contain:
 
@@ -557,6 +786,41 @@ Every analysis block should contain:
     "is_ambiguous": false,
     "ambiguity_reasons": []
   }
+}
+```
+
+### PART 2: Finding Output Example
+
+```json
+{
+  "finding_id": "F0001_global_entropy_0",
+  "finding_type": "global_entropy",
+  "semantic_file_type": "PLAIN_TEXT",
+  "source_library_or_method": "Shannon entropy calculation (Python math)",
+  "byte_offset_start": 0,
+  "byte_offset_end": 37,
+  "extracted_value": {
+    "entropy": 4.5234,
+    "entropy_class": "LOW",
+    "max_possible_entropy": 8.0,
+    "entropy_ratio": 0.5654
+  },
+  "confidence": "HIGH",
+  "verification_reference": "Calculate: -sum(p * log2(p)) for all byte frequencies",
+  "failure_reason": null
+}
+```
+
+### PART 2: Summary Block Example
+
+```json
+{
+  "total_findings": 12,
+  "semantic_file_type": "DOCX",
+  "container_type": "ZIP",
+  "universal_findings": 4,
+  "container_findings": 3,
+  "file_type_specific_findings": 5
 }
 ```
 
@@ -774,7 +1038,49 @@ jobs:
     
     - name: Run tests
       run: |
-        python -m pytest tests/test_analyzer.py -v --cov=src/file_analyzer
+        python -m pytest tests/ -v --cov=src/file_analyzer
+```
+
+---
+
+## Integration Testing (PART 1 + PART 2)
+
+### Testing the Complete Pipeline
+
+```python
+from src.file_analyzer.analyzer import analyze_file
+from src.file_analyzer.deep_analyzer import deep_analyze_file
+import json
+
+def test_complete_pipeline(file_path):
+    """Test PART 1 and PART 2 together."""
+    # Run PART 1
+    print("Running PART 1...")
+    part1_results = analyze_file(file_path)
+    
+    # Verify PART 1 succeeded
+    assert 'summary' in part1_results
+    semantic_type = part1_results['summary']['semantic_file_type']
+    print(f"PART 1: Identified as {semantic_type}")
+    
+    # Run PART 2
+    print("Running PART 2...")
+    part2_results = deep_analyze_file(file_path, part1_results)
+    
+    # Verify PART 2 succeeded
+    assert 'summary' in part2_results
+    total_findings = part2_results['summary']['total_findings']
+    print(f"PART 2: Generated {total_findings} findings")
+    
+    # Verify consistency between PART 1 and PART 2
+    assert part2_results['summary']['semantic_file_type'] == semantic_type
+    
+    return part1_results, part2_results
+
+# Test with different file types
+test_complete_pipeline('/tmp/test.txt')
+test_complete_pipeline('/path/to/image.jpg')
+test_complete_pipeline('/path/to/document.pdf')
 ```
 
 ---
@@ -809,8 +1115,9 @@ Create these files for comprehensive testing:
 
 ### Quick Test Checklist
 
+**PART 1:**
 - [ ] Install dependencies: `pip install -r requirements.txt pytest`
-- [ ] Run full test suite: `python -m pytest tests/test_analyzer.py -v`
+- [ ] Run PART 1 tests: `python -m pytest tests/test_analyzer.py -v`
 - [ ] Verify 42/42 tests pass
 - [ ] Test with real files: JPEG, PDF, DOCX, ZIP
 - [ ] Validate JSON output structure
@@ -818,8 +1125,23 @@ Create these files for comprehensive testing:
 - [ ] Test edge cases: empty file, symlink, broken OOXML
 - [ ] Verify platform-specific features (NTFS ADS on Windows)
 
+**PART 2:**
+- [ ] Run PART 2 tests: `python -m pytest tests/test_deep_analyzer.py -v`
+- [ ] Verify 19/19 tests pass
+- [ ] Test entropy calculations on various files
+- [ ] Test string extraction and classification
+- [ ] Test container analysis (ZIP, OLE)
+- [ ] Test file-type-specific analysis
+- [ ] Verify finding structure and grouping
+
+**Integration:**
+- [ ] Run both PART 1 and PART 2 together
+- [ ] Verify PART 2 uses PART 1 semantic type correctly
+- [ ] Test complete pipeline on multiple file types
+
 ### Expected Test Results
 
+**PART 1:**
 ```
 ================================ test session starts ================================
 collected 42 items
@@ -830,6 +1152,30 @@ tests/test_analyzer.py::TestFileIngestion::test_ingestion_file_not_found PASSED 
 tests/test_analyzer.py::TestAmbiguityHandling::test_ambiguity_with_polyglot PASSED [100%]
 
 ================================ 42 passed in 0.34s =================================
+```
+
+**PART 2:**
+```
+================================ test session starts ================================
+collected 19 items
+
+tests/test_deep_analyzer.py::TestUniversalAnalysis::test_global_entropy_calculation PASSED [ 5%]
+tests/test_deep_analyzer.py::TestUniversalAnalysis::test_printable_string_extraction PASSED [10%]
+...
+tests/test_deep_analyzer.py::TestErrorHandling::test_nonexistent_file PASSED [100%]
+
+================================ 19 passed in 0.07s =================================
+```
+
+**Combined:**
+```
+================================ test session starts ================================
+collected 61 items
+
+tests/test_analyzer.py .......................................... [ 68%]
+tests/test_deep_analyzer.py ...................                  [100%]
+
+================================ 61 passed in 0.68s =================================
 ```
 
 ---
@@ -853,5 +1199,5 @@ For issues or questions:
 ---
 
 **Last Updated:** 2026-01-05  
-**Test Suite Version:** 1.0 (42 tests)  
+**Test Suite Version:** 2.0 (42 PART 1 tests + 19 PART 2 tests = 61 total)  
 **Compatibility:** Python 3.8+ on Linux/macOS/Windows
