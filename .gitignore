@@ -123,3 +123,10 @@ exports/
 
 # Test output directory
 test_output/
+
+# PART 5 Electron application
+electron/node_modules/
+electron/dist/
+electron/out/
+electron/package-lock.json
+*.asar

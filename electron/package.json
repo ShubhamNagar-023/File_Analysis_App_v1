@@ -1,0 +1,36 @@
+{
+  "name": "file-analysis-dashboard",
+  "version": "1.0.0",
+  "description": "PART 5: Desktop Dashboard UI for File Analysis Application - Presentation Layer Only",
+  "main": "main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "test": "echo \"See TESTING_GUIDE.md for test instructions\""
+  },
+  "author": "File Analysis Team",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0"
+  },
+  "dependencies": {},
+  "keywords": [
+    "file-analysis",
+    "forensics",
+    "desktop",
+    "electron",
+    "dashboard"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ShubhamNagar-023/File_Analysis_App_v1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "electronConfig": {
+    "offlineFirst": true,
+    "noExternalCalls": true,
+    "presentationOnly": true
+  }
+}
