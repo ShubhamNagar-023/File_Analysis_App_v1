@@ -1,0 +1,3 @@
+# Core dependencies for file analysis
+python-magic>=0.4.27
+olefile>=0.46
