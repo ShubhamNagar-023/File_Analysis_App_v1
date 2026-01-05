@@ -1,3 +1,52 @@
-# Core dependencies for file analysis
+# File Analysis Application - Core Dependencies
+#
+# This application follows a minimal dependency philosophy for maximum
+# portability and reliability. Only 2 core libraries are required.
+#
+# For enhanced features, see LIBRARY_RATIONALE.md for optional libraries.
+#
+# Installation: pip install -r requirements.txt
+# Documentation: See LIBRARY_RATIONALE.md
+
+# Core File Type Detection
+# Used for magic byte detection and file type identification
 python-magic>=0.4.27
+
+# OLE Compound Binary Format Support
+# Required for analyzing legacy Office documents (DOC/XLS/PPT)
 olefile>=0.46
+
+# ============================================================================
+# OPTIONAL ENHANCEMENTS (Not Required)
+# ============================================================================
+#
+# Uncomment to enable additional features:
+#
+# --- YARA Rule Support ---
+# yara-python>=4.0.0
+#
+# --- Fuzzy Hashing (Similarity Analysis) ---
+# ssdeep>=3.4
+# python-tlsh>=4.5.0
+#
+# --- Image Analysis ---
+# Pillow>=9.0.0
+# piexif>=1.1.3
+#
+# --- PDF Deep Analysis ---
+# pdfminer.six>=20220524
+# PyPDF2>=3.0.0
+#
+# --- Binary Analysis (PE/ELF) ---
+# pefile>=2022.5.30
+# pyelftools>=0.29
+#
+# --- Office Macro Analysis ---
+# oletools>=0.60
+#
+# --- Advanced Statistics ---
+# numpy>=1.20.0
+# scipy>=1.7.0
+#
+# See LIBRARY_RATIONALE.md for detailed explanation of each library.
+

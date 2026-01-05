@@ -1,8 +1,8 @@
 # File Analysis Application - Testing Guide
 
-**Version:** 2.0  
+**Version:** 3.0  
 **Date:** 2026-01-05  
-**Purpose:** Comprehensive testing instructions for PART 1 and PART 2 functionality
+**Purpose:** Comprehensive testing instructions for PART 1, PART 2, and PART 3 functionality
 
 ---
 
@@ -13,10 +13,11 @@
 3. [Running Tests](#running-tests)
 4. [PART 1 Test Coverage](#part-1-test-coverage)
 5. [PART 2 Test Coverage](#part-2-test-coverage)
-6. [Manual Testing Guide](#manual-testing-guide)
-7. [Expected Outputs](#expected-outputs)
-8. [Troubleshooting](#troubleshooting)
-9. [Advanced Testing Scenarios](#advanced-testing-scenarios)
+6. [PART 3 Test Coverage](#part-3-test-coverage)
+7. [Manual Testing Guide](#manual-testing-guide)
+8. [Expected Outputs](#expected-outputs)
+9. [Troubleshooting](#troubleshooting)
+10. [Advanced Testing Scenarios](#advanced-testing-scenarios)
 
 ---
 
@@ -25,7 +26,9 @@
 This guide provides complete testing instructions for the File Analysis Application, covering:
 - **PART 1:** Automated unit tests (42 test cases)
 - **PART 2:** Automated unit tests (19 test cases)
-- Manual testing procedures for both parts
+- **PART 3:** Automated unit tests (26 test cases)
+- **Total:** 87 automated tests with 100% pass rate
+- Manual testing procedures for all parts
 - Expected output validation
 - Edge case testing
 - Performance verification
@@ -48,6 +51,16 @@ This guide provides complete testing instructions for the File Analysis Applicat
 3. **File-Type-Specific Analysis** - Deep analysis based on semantic type
 4. **Output Format** - Proper finding structure and grouping
 5. **Error Handling** - Graceful handling of errors and edge cases
+
+### What PART 3 Tests
+
+1. **Rule Engine** - YARA detection and fuzzy hashing (with graceful fallback)
+2. **Heuristic Engine** - Deterministic heuristic evaluation
+3. **Risk Scoring** - Evidence-based, explainable scoring
+4. **Session Correlation** - Multi-file correlation logic
+5. **Output Contract** - Proper structure and required fields
+6. **Determinism** - Same input produces same output
+7. **File-Type-Specific Heuristics** - PDF, ZIP, OOXML analysis
 
 ---
 
@@ -119,10 +132,10 @@ python -m src.file_analyzer.analyzer --help
 ### Quick Test Run (All Tests)
 
 ```bash
-# Run all tests (PART 1 + PART 2)
+# Run all tests (PART 1 + PART 2 + PART 3)
 python -m pytest tests/ -v
 
-# Expected output: 61 passed (42 PART 1 + 19 PART 2)
+# Expected output: 87 passed (42 PART 1 + 19 PART 2 + 26 PART 3)
 ```
 
 ### Run PART 1 Tests Only
@@ -141,6 +154,15 @@ python -m pytest tests/test_analyzer.py -v
 python -m pytest tests/test_deep_analyzer.py -v
 
 # Expected output: 19 passed in ~0.1s
+```
+
+### Run PART 3 Tests Only
+
+```bash
+# Run all PART 3 tests
+python -m pytest tests/test_part3_analyzer.py -v
+
+# Expected output: 26 passed in ~0.1s
 ```
 
 ### Test Execution Options
@@ -539,6 +561,146 @@ python -m pytest tests/test_deep_analyzer.py::TestConvenienceFunction -v
 
 ---
 
+## PART 3 Test Coverage
+
+### Complete PART 3 Test Suite (26 Tests)
+
+#### Rule Engine (3 tests)
+```bash
+python -m pytest tests/test_part3_analyzer.py::TestRuleEngine -v
+```
+
+| Test | Purpose |
+|------|---------|
+| `test_fuzzy_hash_computation` | Test fuzzy hash computation (ssdeep/TLSH) |
+| `test_rule_engine_without_yara` | Verify operation without YARA |
+| `test_compute_fuzzy_hashes_convenience` | Test convenience function |
+
+**Expected Result:** 3/3 passed
+
+---
+
+#### Heuristic Engine (4 tests)
+```bash
+python -m pytest tests/test_part3_analyzer.py::TestHeuristicEngine -v
+```
+
+| Test | Purpose |
+|------|---------|
+| `test_heuristic_definitions_exist` | Verify heuristic definitions |
+| `test_extension_mismatch_heuristic` | Test extension mismatch detection |
+| `test_double_extension_heuristic` | Test double extension detection |
+| `test_plain_text_no_suspicious_heuristics` | Verify benign files score low |
+
+**Expected Result:** 4/4 passed
+
+---
+
+#### Risk Scorer (4 tests)
+```bash
+python -m pytest tests/test_part3_analyzer.py::TestRiskScorer -v
+```
+
+| Test | Purpose |
+|------|---------|
+| `test_empty_score` | Test empty score (no evidence) |
+| `test_heuristic_contribution` | Verify score calculation |
+| `test_severity_mapping` | Test severity level mapping |
+| `test_score_explanation` | Verify explainable output |
+
+**Expected Result:** 4/4 passed
+
+---
+
+#### Session Correlator (2 tests)
+```bash
+python -m pytest tests/test_part3_analyzer.py::TestSessionCorrelator -v
+```
+
+| Test | Purpose |
+|------|---------|
+| `test_single_file_no_correlation` | Single file has no correlation |
+| `test_correlate_session_convenience` | Test convenience function |
+
+**Expected Result:** 2/2 passed
+
+---
+
+#### Part3 Analyzer (5 tests)
+```bash
+python -m pytest tests/test_part3_analyzer.py::TestPart3Analyzer -v
+```
+
+| Test | Purpose |
+|------|---------|
+| `test_basic_analysis` | Basic PART 3 analysis workflow |
+| `test_json_output` | Verify JSON serialization |
+| `test_reproducibility_notes` | Check reproducibility info |
+| `test_analyze_part3_convenience` | Test convenience function |
+| `test_full_analysis_convenience` | Test complete pipeline (P1+P2+P3) |
+
+**Expected Result:** 5/5 passed
+
+---
+
+#### Output Contract (3 tests)
+```bash
+python -m pytest tests/test_part3_analyzer.py::TestOutputContract -v
+```
+
+| Test | Purpose |
+|------|---------|
+| `test_detection_has_required_fields` | Verify detection structure |
+| `test_score_has_required_fields` | Verify score structure |
+| `test_no_score_without_evidence` | Ensure evidence-based scoring |
+
+**Expected Result:** 3/3 passed
+
+---
+
+#### Severity Levels (1 test)
+```bash
+python -m pytest tests/test_part3_analyzer.py::TestSeverityLevels -v
+```
+
+| Test | Purpose |
+|------|---------|
+| `test_valid_severity_levels` | Verify severity level validity |
+
+**Expected Result:** 1/1 passed
+
+---
+
+#### Determinism (1 test)
+```bash
+python -m pytest tests/test_part3_analyzer.py::TestDeterminism -v
+```
+
+| Test | Purpose |
+|------|---------|
+| `test_same_input_same_output` | Verify deterministic output |
+
+**Expected Result:** 1/1 passed
+
+---
+
+#### File-Type-Specific Tests (3 tests)
+```bash
+python -m pytest tests/test_part3_analyzer.py::TestPDFAnalysis -v
+python -m pytest tests/test_part3_analyzer.py::TestZIPAnalysis -v
+python -m pytest tests/test_part3_analyzer.py::TestOOXMLAnalysis -v
+```
+
+| Test | Purpose |
+|------|---------|
+| `test_pdf_javascript_heuristic` | PDF JavaScript detection |
+| `test_trailing_data_heuristic` | ZIP trailing data detection |
+| `test_docx_with_vba` | DOCX VBA macro detection |
+
+**Expected Result:** 3/3 passed
+
+---
+
 ## Manual Testing Guide
 
 ### PART 1: Basic Manual Test
@@ -734,6 +896,149 @@ part2 = deep_analyze_file('/path/to/document.docx', part1)
 - OOXML parts validation
 - Relationship (.rels) integrity
 - Macro detection (VBA project)
+
+---
+
+### PART 3: Manual Testing
+
+#### 1. Complete Pipeline Test
+
+```python
+from src.file_analyzer.part3_analyzer import full_analysis
+import json
+
+# Run complete analysis (PART 1 + PART 2 + PART 3)
+results = full_analysis('/tmp/test.txt')
+print(json.dumps(results, indent=2))
+```
+
+#### 2. Step-by-Step PART 3 Analysis
+
+```python
+from src.file_analyzer.analyzer import analyze_file
+from src.file_analyzer.deep_analyzer import deep_analyze_file
+from src.file_analyzer.part3_analyzer import Part3Analyzer
+import json
+
+# Run PART 1
+part1 = analyze_file('/tmp/test.txt')
+print("✅ PART 1 completed")
+
+# Run PART 2
+part2 = deep_analyze_file('/tmp/test.txt', part1)
+print("✅ PART 2 completed")
+
+# Run PART 3
+analyzer = Part3Analyzer('/tmp/test.txt', part1, part2)
+part3 = analyzer.analyze()
+print("✅ PART 3 completed")
+
+print(json.dumps(part3, indent=2))
+```
+
+#### 3. Expected PART 3 Output Structure
+
+```json
+{
+  "file_info": {
+    "file_name": "test.txt",
+    "semantic_file_type": "PLAIN_TEXT"
+  },
+  "rule_engine": {
+    "yara_detections": [],
+    "fuzzy_hashes": {
+      "ssdeep": "...",
+      "tlsh": "..."
+    },
+    "library_status": {
+      "yara_available": false,
+      "ssdeep_available": false,
+      "tlsh_available": false
+    }
+  },
+  "heuristics": {
+    "triggered_heuristics": [],
+    "total_heuristics_evaluated": 10,
+    "heuristics_triggered": 0
+  },
+  "risk_score": {
+    "raw_score": 0.0,
+    "normalized_score": 0.0,
+    "severity": "INFORMATIONAL",
+    "confidence": "HIGH",
+    "score_breakdown": {
+      "rule_matches": 0,
+      "heuristics": 0,
+      "structural_anomalies": 0
+    },
+    "explanation": "No suspicious indicators detected."
+  },
+  "summary": {
+    "total_detections": 0,
+    "rule_matches": 0,
+    "heuristics_triggered": 0,
+    "overall_severity": "INFORMATIONAL"
+  },
+  "reproducibility": {
+    "deterministic": true,
+    "version_info": "..."
+  }
+}
+```
+
+### PART 3: Test with Suspicious File
+
+#### Create ZIP with Trailing Data (Heuristic Trigger)
+
+```bash
+# Create a simple ZIP
+echo "file content" > /tmp/file1.txt
+zip /tmp/test.zip /tmp/file1.txt
+
+# Add trailing data
+echo "EXTRA DATA AFTER EOF" >> /tmp/test.zip
+```
+
+#### Analyze with PART 3
+
+```python
+from src.file_analyzer.part3_analyzer import full_analysis
+import json
+
+results = full_analysis('/tmp/test.zip')
+print(json.dumps(results['part3']['heuristics'], indent=2))
+```
+
+**Expected:** Trailing data heuristic should trigger:
+```json
+{
+  "triggered_heuristics": [
+    {
+      "heuristic_id": "H003",
+      "name": "ZIP_TRAILING_DATA",
+      "description": "ZIP archive with data beyond logical EOF",
+      "severity": "MEDIUM",
+      "weight": 15,
+      "evidence_references": ["F0003_trailing_data_0"]
+    }
+  ]
+}
+```
+
+### PART 3: Test with DOCX Containing Macro
+
+```python
+# Analyze DOCX with VBA macro
+results = full_analysis('/path/to/macro_document.docx')
+
+# Check for macro heuristic
+heuristics = results['part3']['heuristics']['triggered_heuristics']
+for h in heuristics:
+    if 'MACRO' in h['name']:
+        print(f"✅ Detected: {h['name']} - Severity: {h['severity']}")
+```
+
+**Expected:** OOXML_VBA_MACRO heuristic should trigger if macros present.
 
 ---
 
@@ -1043,44 +1348,71 @@ jobs:
 
 ---
 
-## Integration Testing (PART 1 + PART 2)
+## Integration Testing (PART 1 + PART 2 + PART 3)
 
 ### Testing the Complete Pipeline
 
 ```python
-from src.file_analyzer.analyzer import analyze_file
-from src.file_analyzer.deep_analyzer import deep_analyze_file
+from src.file_analyzer.part3_analyzer import full_analysis
 import json
 
 def test_complete_pipeline(file_path):
-    """Test PART 1 and PART 2 together."""
-    # Run PART 1
-    print("Running PART 1...")
-    part1_results = analyze_file(file_path)
+    """Test PART 1, PART 2, and PART 3 together."""
+    print(f"Analyzing: {file_path}")
     
-    # Verify PART 1 succeeded
-    assert 'summary' in part1_results
-    semantic_type = part1_results['summary']['semantic_file_type']
-    print(f"PART 1: Identified as {semantic_type}")
+    # Run complete analysis
+    results = full_analysis(file_path)
     
-    # Run PART 2
-    print("Running PART 2...")
-    part2_results = deep_analyze_file(file_path, part1_results)
+    # Verify PART 1
+    assert 'part1' in results
+    semantic_type = results['part1']['summary']['semantic_file_type']
+    print(f"✅ PART 1: Identified as {semantic_type}")
     
-    # Verify PART 2 succeeded
-    assert 'summary' in part2_results
-    total_findings = part2_results['summary']['total_findings']
-    print(f"PART 2: Generated {total_findings} findings")
+    # Verify PART 2
+    assert 'part2' in results
+    total_findings = results['part2']['summary']['total_findings']
+    print(f"✅ PART 2: Generated {total_findings} findings")
     
-    # Verify consistency between PART 1 and PART 2
-    assert part2_results['summary']['semantic_file_type'] == semantic_type
+    # Verify PART 3
+    assert 'part3' in results
+    risk_score = results['part3']['risk_score']['normalized_score']
+    severity = results['part3']['risk_score']['severity']
+    print(f"✅ PART 3: Risk Score {risk_score}/100 - Severity: {severity}")
     
-    return part1_results, part2_results
+    return results
 
 # Test with different file types
 test_complete_pipeline('/tmp/test.txt')
 test_complete_pipeline('/path/to/image.jpg')
 test_complete_pipeline('/path/to/document.pdf')
+```
+
+### Testing Individual Parts
+
+```python
+from src.file_analyzer.analyzer import analyze_file
+from src.file_analyzer.deep_analyzer import deep_analyze_file
+from src.file_analyzer.part3_analyzer import Part3Analyzer
+
+def test_pipeline_step_by_step(file_path):
+    """Test each part individually."""
+    # PART 1
+    part1 = analyze_file(file_path)
+    assert 'summary' in part1
+    print(f"✅ PART 1: {part1['summary']['semantic_file_type']}")
+    
+    # PART 2
+    part2 = deep_analyze_file(file_path, part1)
+    assert 'summary' in part2
+    print(f"✅ PART 2: {part2['summary']['total_findings']} findings")
+    
+    # PART 3
+    analyzer = Part3Analyzer(file_path, part1, part2)
+    part3 = analyzer.analyze()
+    assert 'risk_score' in part3
+    print(f"✅ PART 3: Score {part3['risk_score']['normalized_score']}/100")
+    
+    return part1, part2, part3
 ```
 
 ---
@@ -1134,10 +1466,22 @@ Create these files for comprehensive testing:
 - [ ] Test file-type-specific analysis
 - [ ] Verify finding structure and grouping
 
+**PART 3:**
+- [ ] Run PART 3 tests: `python -m pytest tests/test_part3_analyzer.py -v`
+- [ ] Verify 26/26 tests pass
+- [ ] Test rule engine (with and without YARA)
+- [ ] Test fuzzy hashing (with and without ssdeep/TLSH)
+- [ ] Test heuristic evaluation
+- [ ] Test risk scoring and severity mapping
+- [ ] Test deterministic output (same input = same output)
+- [ ] Verify evidence-based scoring (no score without evidence)
+
 **Integration:**
-- [ ] Run both PART 1 and PART 2 together
-- [ ] Verify PART 2 uses PART 1 semantic type correctly
-- [ ] Test complete pipeline on multiple file types
+- [ ] Run all tests: `python -m pytest tests/ -v`
+- [ ] Verify 87/87 tests pass (42 + 19 + 26)
+- [ ] Test complete pipeline (PART 1 + PART 2 + PART 3)
+- [ ] Verify consistency across all parts
+- [ ] Test with multiple file types
 
 ### Expected Test Results
 
@@ -1167,15 +1511,29 @@ tests/test_deep_analyzer.py::TestErrorHandling::test_nonexistent_file PASSED [10
 ================================ 19 passed in 0.07s =================================
 ```
 
-**Combined:**
+**PART 3:**
 ```
 ================================ test session starts ================================
-collected 61 items
+collected 26 items
 
-tests/test_analyzer.py .......................................... [ 68%]
-tests/test_deep_analyzer.py ...................                  [100%]
+tests/test_part3_analyzer.py::TestRuleEngine::test_fuzzy_hash_computation PASSED [ 3%]
+tests/test_part3_analyzer.py::TestHeuristicEngine::test_heuristic_definitions_exist PASSED [ 7%]
+...
+tests/test_part3_analyzer.py::TestOOXMLAnalysis::test_docx_with_vba PASSED [100%]
 
-================================ 61 passed in 0.68s =================================
+================================ 26 passed in 0.12s =================================
+```
+
+**Combined (All Parts):**
+```
+================================ test session starts ================================
+collected 87 items
+
+tests/test_analyzer.py .......................................... [ 48%]
+tests/test_deep_analyzer.py ...................                  [ 70%]
+tests/test_part3_analyzer.py ..........................          [100%]
+
+================================ 87 passed in 0.85s =================================
 ```
 
 ---
@@ -1183,6 +1541,7 @@ tests/test_deep_analyzer.py ...................                  [100%]
 ## Additional Resources
 
 - **Main Documentation:** `README.md`
+- **Library Rationale:** `LIBRARY_RATIONALE.md` - Explains library choices and architecture
 - **Verification Report:** `CODE_VS_DOC_VERIFICATION.md`
 - **Improvements Documentation:** `PART1_IMPROVEMENTS.md`
 - **Requirements Specification:** `File_analysis_app_plan`
@@ -1195,9 +1554,10 @@ For issues or questions:
 1. Check `VERIFICATION_SUMMARY.md` for known issues
 2. Review test output with `-vv` flag for details
 3. Examine `CODE_VS_DOC_VERIFICATION.md` for implementation details
+4. See `LIBRARY_RATIONALE.md` for library usage questions
 
 ---
 
 **Last Updated:** 2026-01-05  
-**Test Suite Version:** 2.0 (42 PART 1 tests + 19 PART 2 tests = 61 total)  
+**Test Suite Version:** 3.0 (42 PART 1 + 19 PART 2 + 26 PART 3 = 87 total)  
 **Compatibility:** Python 3.8+ on Linux/macOS/Windows
