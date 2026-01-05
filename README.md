@@ -176,6 +176,35 @@ See [LIBRARY_RATIONALE.md](LIBRARY_RATIONALE.md) for detailed explanation of lib
 
 ## Usage
 
+### Quick Start: Universal Analyzer
+
+For quick analysis of any file type, use the universal analyzer script:
+
+```bash
+# Analyze any file with complete PART 1-4 pipeline
+python analyze_file.py <file_path>
+
+# Examples
+python analyze_file.py test_files/sample.pdf
+python analyze_file.py test_files/sample.docx
+python analyze_file.py /path/to/any/file
+```
+
+**Features:**
+- Auto-detects file type
+- Runs complete PART 1-4 analysis pipeline
+- Displays summary with risk assessment
+- Persists results to temporary database
+- Exports to JSON
+- Returns exit code based on severity (0=safe, 1=medium, 2=high, 3=error)
+
+**Output includes:**
+- File type and container information
+- Total findings from deep analysis
+- Risk score and severity
+- Heuristics triggered
+- Database persistence confirmation
+
 ### PART 1: File Ingestion & Type Resolution
 
 #### Command Line
@@ -264,6 +293,96 @@ complete_results = full_analysis('/path/to/file')
 - **Risk Scoring**: Evidence-based, explainable scoring
 - **Session Correlation**: Multi-file correlation within session
 
+### PART 4: Persistence, CLI & IPC
+
+#### Python API
+
+```python
+from src.file_analyzer.analyzer import analyze_file
+from src.file_analyzer.deep_analyzer import deep_analyze_file
+from src.file_analyzer.part3_analyzer import analyze_part3
+from src.file_analyzer.part4.persistence import AnalysisDatabase
+from src.file_analyzer.part4.exporter import Exporter, ExportFormat
+
+# Run PART 1, 2, 3
+part1 = analyze_file('/path/to/file')
+part2 = deep_analyze_file('/path/to/file', part1)
+part3 = analyze_part3('/path/to/file', part1, part2)
+
+# Initialize database
+db = AnalysisDatabase('/path/to/analysis.db')
+
+# Create case and session
+case_id = db.create_case(
+    name="Investigation Name",
+    description="Case description"
+)
+
+session_id = db.create_session(
+    case_id=case_id,
+    name="Analysis Session"
+)
+
+# Import analysis results
+record_id = db.import_analysis(
+    session_id=session_id,
+    part1_results=part1,
+    part2_results=part2,
+    part3_results=part3
+)
+
+# Retrieve record
+record = db.get_record(record_id)
+
+# Query records
+high_risk_files = db.query_records(
+    severity="high",
+    min_score=75.0
+)
+
+# Export results
+exporter = Exporter(db)
+exporter.export_record(record_id, '/path/to/export.json', ExportFormat.JSON)
+exporter.export_session(session_id, '/path/to/session.json')
+exporter.export_case(case_id, '/path/to/case.json')
+
+db.close()
+```
+
+#### Convenience Test Scripts
+
+**Universal Analyzer (recommended):**
+```bash
+# Analyze any file type with auto-detection
+python analyze_file.py <file_path>
+
+# Examples
+python analyze_file.py test_files/sample.pdf
+python analyze_file.py /path/to/document.docx
+python analyze_file.py /home/user/photo.jpg
+```
+
+**File-Type Specific Scripts:**
+```bash
+# Test specific file types (runs all 4 parts with detailed output)
+python text_test.py test_files/sample.txt
+python docx_test.py test_files/sample.docx
+python pdf_test.py test_files/sample.pdf
+python image_test.py test_files/sample.jpg
+```
+
+The universal `analyze_file.py` script provides a clean, production-ready interface while the file-type specific scripts show detailed JSON output for each part.
+
+#### Features
+
+- **SQLite Persistence**: Durable storage of all analysis results
+- **Case Management**: Organize analyses into cases and sessions
+- **Data Integrity**: Cryptographic checksums verify immutability
+- **Schema Validation**: All data validated against JSON schemas
+- **Export Functionality**: Export to JSON and HTML formats
+- **Query Interface**: Filter records by file type, severity, score, time range
+- **IPC Contracts**: Structured request/response for UI integration
+
 ## Output Format
 
 ### PART 1 Output
@@ -347,16 +466,69 @@ PART 3 produces deterministic, evidence-based detections and scoring:
 - Deterministic and reproducible
 - No threat naming or guessing
 
+### PART 4 Output
+
+PART 4 provides persistence and export capabilities:
+
+**Database Schema:**
+- `cases` - Investigation cases with metadata
+- `sessions` - Analysis sessions within cases
+- `analysis_records` - Complete PART 1-3 results with integrity checks
+- `findings` - Extracted findings from PART 2
+- `heuristic_results` - Heuristic evaluations from PART 3
+- `provenance` - Audit trail and schema versioning
+
+**Record Structure:**
+```json
+{
+  "record_id": "REC-ABC123DEF456",
+  "session_id": "SES-12345678",
+  "case_id": "CASE-ABCD1234",
+  "file_path": "/path/to/file",
+  "file_name": "document.pdf",
+  "file_size": 12345,
+  "sha256_hash": "abcd1234...",
+  "semantic_file_type": "PDF",
+  "risk_score": 45.5,
+  "severity": "medium",
+  "created_at": "2026-01-05T12:00:00",
+  "part1": { /* complete PART 1 results */ },
+  "part2": { /* complete PART 2 results */ },
+  "part3": { /* complete PART 3 results */ },
+  "provenance": {
+    "schema_version": "1.0.0",
+    "tool_version": "1.0.0",
+    "checksum": "integrity_hash"
+  }
+}
+```
+
+**Query Results:**
+- Filter by session_id, file_type, severity, score range, time range
+- Results include summary fields for quick review
+- Full PART 1-3 data available on demand
+
+**Export Formats:**
+- **JSON**: Complete structured data with provenance
+- **HTML**: Human-readable report with risk summary
+- **Session/Case Exports**: Multiple records with metadata
+
+**IPC Messages:**
+- Structured request/response for UI integration
+- Schema-validated payloads
+- Error handling with specific error codes
+
+
 ## Running Tests
 
-### Run All Tests (Parts 1, 2, and 3)
+### Run All Tests (Parts 1, 2, 3, and 4)
 
 ```bash
 pip install pytest
 python -m pytest tests/ -v
 ```
 
-**Expected:** 87 tests passed (42 PART 1 + 19 PART 2 + 26 PART 3)
+**Expected:** 121 tests passed (42 PART 1 + 19 PART 2 + 26 PART 3 + 34 PART 4)
 
 ### Run Tests by Part
 
@@ -369,6 +541,9 @@ python -m pytest tests/test_deep_analyzer.py -v
 
 # PART 3 Tests (26 tests)
 python -m pytest tests/test_part3_analyzer.py -v
+
+# PART 4 Tests (34 tests)
+python -m pytest tests/test_part4.py -v
 ```
 
 ### Test Coverage
@@ -376,7 +551,8 @@ python -m pytest tests/test_part3_analyzer.py -v
 - **PART 1:** 42 tests covering all file ingestion and type resolution features
 - **PART 2:** 19 tests covering universal, container, and file-type-specific analysis
 - **PART 3:** 26 tests covering rules, heuristics, scoring, and correlation
-- **Total:** 87 tests with 100% pass rate
+- **PART 4:** 34 tests covering persistence, schemas, IPC, and export functionality
+- **Total:** 121 tests with 100% pass rate
 
 ## Documentation
 
