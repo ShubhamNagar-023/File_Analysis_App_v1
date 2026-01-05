@@ -1,0 +1,4 @@
+This is a sample text file for testing.
+It contains multiple lines of text.
+Line 3: Testing file analysis.
+Line 4: Plain text content.

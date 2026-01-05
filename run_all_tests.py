@@ -68,10 +68,13 @@ def run_test(test_config):
             checks = {
                 "PART 1": "Running PART 1" in output,
                 "PART 2": "Running PART 2" in output,
+                "PART 3": "Running PART 3" in output,
                 "File Ingestion": "secure_file_ingestion" in output,
                 "Cryptographic Identity": "cryptographic_identity" in output,
                 "Magic Detection": "magic_detection" in output,
-                "Entropy Analysis": "global_entropy" in output
+                "Entropy Analysis": "global_entropy" in output,
+                "Risk Scoring": "risk_score" in output,
+                "Analysis Complete": "ANALYSIS COMPLETE - ALL THREE PARTS" in output
             }
             
             print("\nComponent Checks:")
