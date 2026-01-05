@@ -2,6 +2,20 @@
 
 A professional-grade file analysis and forensic inspection application for security analysis, malware triage, digital forensics, and file integrity verification.
 
+## 🚀 Quick Start
+
+**New to this application?** See **[QUICKSTART.md](QUICKSTART.md)** for step-by-step setup instructions for both backend (Python) and frontend (Electron UI).
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Analyze a file
+python analyze_file.py test_files/sample.pdf
+```
+
+That's it! For detailed setup, see the [Quick Start Guide](QUICKSTART.md).
+
 ## Features
 
 ### PART 1: File Ingestion & Exact File-Type Resolution
@@ -134,80 +148,70 @@ A professional-grade file analysis and forensic inspection application for secur
 
 ## Installation
 
-### Minimal Installation (Recommended)
-
 ```bash
 pip install -r requirements.txt
 ```
 
-This installs only the core dependencies:
-- `python-magic` (0.4.27+) - Magic byte detection
-- `olefile` (0.46+) - OLE Compound Binary format parsing
-- `weasyprint` (60.0+) - **NEW**: PDF generation for export reports
+**Core dependencies:**
+- `python-magic` - File type detection
+- `olefile` - OLE Compound Binary format parsing
 
-**Total:** 3 packages + dependencies (~15MB), works on all platforms
-
-### Optional Enhancements
-
-For enhanced capabilities, install optional libraries:
-
-```bash
-# YARA rule support
-pip install yara-python
-
-# Fuzzy hashing (similarity analysis)
-pip install ssdeep python-tlsh
-
-# Image metadata extraction
-pip install Pillow piexif
-
-# PDF deep analysis
-pip install pdfminer.six PyPDF2
-
-# Binary analysis (PE/ELF)
-pip install pefile pyelftools
-
-# Office macro analysis
-pip install oletools
-```
-
-**Note:** The application works fully with just the core dependencies. Optional libraries enable additional features but are not required.
-
-See [LIBRARY_RATIONALE.md](LIBRARY_RATIONALE.md) for detailed explanation of library choices.
+For complete installation instructions and optional enhancements, see:
+- **[QUICKSTART.md](QUICKSTART.md)** - Step-by-step setup guide
+- **[LIBRARY_RATIONALE.md](LIBRARY_RATIONALE.md)** - Optional libraries and why we use them
 
 ## Usage
 
-### Quick Start: Universal Analyzer
-
-For quick analysis of any file type, use the universal analyzer script:
+### Quick Analysis
 
 ```bash
-# Analyze any file with complete PART 1-4 pipeline
+# Analyze any file
 python analyze_file.py <file_path>
 
 # Examples
 python analyze_file.py test_files/sample.pdf
 python analyze_file.py test_files/sample.docx
-python analyze_file.py /path/to/any/file
 ```
 
-**Features:**
-- Auto-detects file type
-- Runs complete PART 1-4 analysis pipeline
-- Displays summary with risk assessment
-- **⭐ NEW**: Persists results to permanent `exports/` directory
-- **⭐ NEW**: Exports to **JSON, HTML, and PDF** formats automatically
-- Returns exit code based on severity (0=safe, 1=medium, 2=high, 3=error)
+**Output:** Results are automatically exported to `exports/` directory in JSON, HTML, and PDF formats.
 
-**Output includes:**
-- File type and container information
-- Total findings from deep analysis
-- Risk score and severity
-- Heuristics triggered
-- **⭐ NEW**: Export paths for all three formats (JSON, HTML, PDF)
-- Database persistence confirmation
+For detailed usage instructions, API examples, and advanced usage, see **[QUICKSTART.md](QUICKSTART.md)**.
 
-**Export Directory Structure:**
+### Python API
+
+```python
+from src.file_analyzer.analyzer import analyze_file
+from src.file_analyzer.deep_analyzer import deep_analyze_file
+from src.file_analyzer.part3_analyzer import analyze_part3
+
+# Complete analysis pipeline
+part1 = analyze_file('/path/to/file')
+part2 = deep_analyze_file('/path/to/file', part1)
+part3 = analyze_part3('/path/to/file', part1, part2)
+```
+
+For more examples, see the [Quick Start Guide](QUICKSTART.md#common-use-cases).
+
+## Testing
+
+```bash
+# Run all tests
+python -m pytest tests/ -v
+```
+
+**Expected:** 121 tests passed (42 PART 1 + 19 PART 2 + 26 PART 3 + 34 PART 4)
+
+For comprehensive testing instructions, see **[TESTING_GUIDE.md](TESTING_GUIDE.md)**.
+
+## Output Format
+
+Results are provided in structured JSON format and exported in multiple formats:
+
+- **JSON**: Complete structured data with all findings
+- **HTML**: Human-readable report with risk summary
+- **PDF**: Professional report for documentation
+
+**Export Directory:**
 ```
 exports/
 └── 20260105_193116/
@@ -217,367 +221,25 @@ exports/
     └── filename_analysis.pdf          # Professional PDF report
 ```
 
-📚 **See [EXPORT_GUIDE.md](EXPORT_GUIDE.md) for complete export documentation**
-
-### PART 1: File Ingestion & Type Resolution
-
-#### Command Line
-
-```bash
-python -m src.file_analyzer.analyzer <file_path>
-```
-
-#### Python API
-
-```python
-from src.file_analyzer import FileAnalyzer
-
-analyzer = FileAnalyzer('/path/to/file')
-results = analyzer.analyze()
-print(analyzer.to_json())
-```
-
-#### Convenience Function
-
-```python
-from src.file_analyzer.analyzer import analyze_file
-
-results = analyze_file('/path/to/file')
-```
-
-### PART 2: Deep Static Analysis
-
-#### Python API
-
-```python
-from src.file_analyzer.analyzer import analyze_file
-from src.file_analyzer.deep_analyzer import deep_analyze_file
-
-# Run PART 1 first
-part1_results = analyze_file('/path/to/file')
-
-# Run PART 2 using PART 1 results
-part2_results = deep_analyze_file('/path/to/file', part1_results)
-```
-
-#### Convenience Function
-
-```python
-from src.file_analyzer.deep_analyzer import DeepAnalyzer
-
-analyzer = DeepAnalyzer('/path/to/file', part1_results)
-findings = analyzer.analyze()
-```
-
-### PART 3: Rules, Correlation & Risk Scoring
-
-#### Python API
-
-```python
-from src.file_analyzer.analyzer import analyze_file
-from src.file_analyzer.deep_analyzer import deep_analyze_file
-from src.file_analyzer.part3_analyzer import Part3Analyzer
-
-# Run PART 1 and PART 2 first
-part1_results = analyze_file('/path/to/file')
-part2_results = deep_analyze_file('/path/to/file', part1_results)
-
-# Run PART 3 analysis
-analyzer = Part3Analyzer('/path/to/file', part1_results, part2_results)
-part3_results = analyzer.analyze()
-```
-
-#### Convenience Functions
-
-```python
-from src.file_analyzer.part3_analyzer import analyze_part3, full_analysis
-
-# Analyze with PART 3 only (requires PART 1 & 2 results)
-part3_results = analyze_part3('/path/to/file', part1_results, part2_results)
-
-# Complete analysis (PART 1 + PART 2 + PART 3)
-complete_results = full_analysis('/path/to/file')
-```
-
-#### Features
-
-- **Rule-Based Detection**: YARA rules (optional, graceful fallback)
-- **Fuzzy Hashing**: ssdeep and TLSH similarity (optional)
-- **Heuristic Evaluation**: Deterministic heuristics with evidence
-- **Risk Scoring**: Evidence-based, explainable scoring
-- **Session Correlation**: Multi-file correlation within session
-
-### PART 4: Persistence, CLI & IPC
-
-#### Python API
-
-```python
-from src.file_analyzer.analyzer import analyze_file
-from src.file_analyzer.deep_analyzer import deep_analyze_file
-from src.file_analyzer.part3_analyzer import analyze_part3
-from src.file_analyzer.part4.persistence import AnalysisDatabase
-from src.file_analyzer.part4.exporter import Exporter, ExportFormat
-
-# Run PART 1, 2, 3
-part1 = analyze_file('/path/to/file')
-part2 = deep_analyze_file('/path/to/file', part1)
-part3 = analyze_part3('/path/to/file', part1, part2)
-
-# Initialize database
-db = AnalysisDatabase('/path/to/analysis.db')
-
-# Create case and session
-case_id = db.create_case(
-    name="Investigation Name",
-    description="Case description"
-)
-
-session_id = db.create_session(
-    case_id=case_id,
-    name="Analysis Session"
-)
-
-# Import analysis results
-record_id = db.import_analysis(
-    session_id=session_id,
-    part1_results=part1,
-    part2_results=part2,
-    part3_results=part3
-)
-
-# Retrieve record
-record = db.get_record(record_id)
-
-# Query records
-high_risk_files = db.query_records(
-    severity="high",
-    min_score=75.0
-)
-
-# Export results
-exporter = Exporter(db)
-exporter.export_record(record_id, '/path/to/export.json', ExportFormat.JSON)
-exporter.export_session(session_id, '/path/to/session.json')
-exporter.export_case(case_id, '/path/to/case.json')
-
-db.close()
-```
-
-#### Convenience Test Scripts
-
-**Universal Analyzer (recommended):**
-```bash
-# Analyze any file type with auto-detection
-python analyze_file.py <file_path>
-
-# Examples
-python analyze_file.py test_files/sample.pdf
-python analyze_file.py /path/to/document.docx
-python analyze_file.py /home/user/photo.jpg
-```
-
-**File-Type Specific Scripts:**
-```bash
-# Test specific file types (runs all 4 parts with detailed output)
-python text_test.py test_files/sample.txt
-python docx_test.py test_files/sample.docx
-python pdf_test.py test_files/sample.pdf
-python image_test.py test_files/sample.jpg
-```
-
-The universal `analyze_file.py` script provides a clean, production-ready interface while the file-type specific scripts show detailed JSON output for each part.
-
-#### Features
-
-- **SQLite Persistence**: Durable storage of all analysis results
-- **Case Management**: Organize analyses into cases and sessions
-- **Data Integrity**: Cryptographic checksums verify immutability
-- **Schema Validation**: All data validated against JSON schemas
-- **Export Functionality**: Export to JSON and HTML formats
-- **Query Interface**: Filter records by file type, severity, score, time range
-- **IPC Contracts**: Structured request/response for UI integration
-
-## Output Format
-
-### PART 1 Output
-
-### PART 1 Output
-
-Results are provided in structured JSON format with each analysis including:
-- `analysis_name`
-- `library_or_method`
-- `input_byte_range`
-- `output_value`
-- `evidence`
-- `verification_method`
-- `failure_reason` (if applicable)
-
-Summary block includes:
-- `container_type`
-- `semantic_file_type`
-- `classification_confidence`
-- `classification_notes`
-- `detected_deception_flags`
-
-### PART 2 Output
-
-PART 2 findings are grouped into three categories:
-- `universal` - Universal static analysis findings (entropy, strings, anomalies)
-- `container_level` - Container-specific findings (ZIP, OLE structure)
-- `file_type_specific` - File-type-specific deep analysis findings
-
-Each finding includes:
-- `finding_id` - Unique identifier
-- `finding_type` - Type of finding
-- `semantic_file_type` - File type being analyzed
-- `source_library_or_method` - Analysis method/library used
-- `byte_offset_start` - Start offset in file
-- `byte_offset_end` - End offset in file (if applicable)
-- `extracted_value` - Finding-specific data
-- `confidence` - Confidence level (HIGH/MEDIUM/LOW)
-- `verification_reference` - How to verify the finding
-- `failure_reason` - Reason for failure (if applicable)
-
-Summary includes:
-- `total_findings` - Total number of findings
-- `semantic_file_type` - File type analyzed
-- `container_type` - Container type (if applicable)
-- `universal_findings` - Count of universal findings
-- `container_findings` - Count of container-level findings
-- `file_type_specific_findings` - Count of file-type-specific findings
-
-### PART 3 Output
-
-PART 3 produces deterministic, evidence-based detections and scoring:
-
-**Rule Engine:**
-- `yara_detections` - YARA rule matches (if YARA available)
-- `fuzzy_hashes` - ssdeep and TLSH hashes (if libraries available)
-- `library_status` - Availability of optional libraries
-
-**Heuristics:**
-- `triggered_heuristics` - List of triggered heuristics
-- Each heuristic includes:
-  - `heuristic_id` - Unique identifier
-  - `name` - Heuristic name
-  - `description` - What it detects
-  - `trigger_conditions` - What triggered it
-  - `evidence_references` - PART 1/2 evidence IDs
-  - `weight` - Score contribution
-  - `severity` - Risk level (INFORMATIONAL/LOW/MEDIUM/HIGH/CRITICAL)
-
-**Risk Score:**
-- `raw_score` - Unweighted total
-- `normalized_score` - 0-100 scale
-- `severity` - Overall severity classification
-- `confidence` - Confidence in assessment
-- `score_breakdown` - Contribution by category
-- `explanation` - Human-readable explanation
-
-**Summary:**
-- Evidence-based decisions only
-- All scores traceable to specific findings
-- Deterministic and reproducible
-- No threat naming or guessing
-
-### PART 4 Output
-
-PART 4 provides persistence and export capabilities:
-
-**Database Schema:**
-- `cases` - Investigation cases with metadata
-- `sessions` - Analysis sessions within cases
-- `analysis_records` - Complete PART 1-3 results with integrity checks
-- `findings` - Extracted findings from PART 2
-- `heuristic_results` - Heuristic evaluations from PART 3
-- `provenance` - Audit trail and schema versioning
-
-**Record Structure:**
-```json
-{
-  "record_id": "REC-ABC123DEF456",
-  "session_id": "SES-12345678",
-  "case_id": "CASE-ABCD1234",
-  "file_path": "/path/to/file",
-  "file_name": "document.pdf",
-  "file_size": 12345,
-  "sha256_hash": "abcd1234...",
-  "semantic_file_type": "PDF",
-  "risk_score": 45.5,
-  "severity": "medium",
-  "created_at": "2026-01-05T12:00:00",
-  "part1": { /* complete PART 1 results */ },
-  "part2": { /* complete PART 2 results */ },
-  "part3": { /* complete PART 3 results */ },
-  "provenance": {
-    "schema_version": "1.0.0",
-    "tool_version": "1.0.0",
-    "checksum": "integrity_hash"
-  }
-}
-```
-
-**Query Results:**
-- Filter by session_id, file_type, severity, score range, time range
-- Results include summary fields for quick review
-- Full PART 1-3 data available on demand
-
-**Export Formats:**
-- **JSON**: Complete structured data with provenance
-- **HTML**: Human-readable report with risk summary
-- **Session/Case Exports**: Multiple records with metadata
-
-**IPC Messages:**
-- Structured request/response for UI integration
-- Schema-validated payloads
-- Error handling with specific error codes
-
-
-## Running Tests
-
-### Run All Tests (Parts 1, 2, 3, and 4)
-
-```bash
-pip install pytest
-python -m pytest tests/ -v
-```
-
-**Expected:** 121 tests passed (42 PART 1 + 19 PART 2 + 26 PART 3 + 34 PART 4)
-
-### Run Tests by Part
-
-```bash
-# PART 1 Tests (42 tests)
-python -m pytest tests/test_analyzer.py -v
-
-# PART 2 Tests (19 tests)
-python -m pytest tests/test_deep_analyzer.py -v
-
-# PART 3 Tests (26 tests)
-python -m pytest tests/test_part3_analyzer.py -v
-
-# PART 4 Tests (34 tests)
-python -m pytest tests/test_part4.py -v
-```
-
-### Test Coverage
-
-- **PART 1:** 42 tests covering all file ingestion and type resolution features
-- **PART 2:** 19 tests covering universal, container, and file-type-specific analysis
-- **PART 3:** 26 tests covering rules, heuristics, scoring, and correlation
-- **PART 4:** 34 tests covering persistence, schemas, IPC, and export functionality
-- **Total:** 121 tests with 100% pass rate
+For detailed output format specifications, see **[EXPORT_GUIDE.md](EXPORT_GUIDE.md)**.
 
 ## Documentation
 
+### Essential Documentation
+
+- **[QUICKSTART.md](QUICKSTART.md)** - ⭐ **START HERE** - Quick setup guide for backend and frontend
 - **[README.md](README.md)** - Main documentation (this file)
-- **[EXPORT_GUIDE.md](EXPORT_GUIDE.md)** - ⭐ **NEW**: Multi-format export and reporting guide
-- **[PDF_EXPORT_GUIDE.md](PDF_EXPORT_GUIDE.md)** - ⭐ **NEW**: PDF export options and WeasyPrint setup
-- **[PRODUCTION_READINESS.md](PRODUCTION_READINESS.md)** - ⭐ **NEW**: Production deployment guide
 - **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - Comprehensive testing instructions
+- **[EXPORT_GUIDE.md](EXPORT_GUIDE.md)** - Multi-format export and reporting guide
 - **[LIBRARY_RATIONALE.md](LIBRARY_RATIONALE.md)** - Library usage and architecture decisions
-- **[CODE_VS_DOC_VERIFICATION.md](CODE_VS_DOC_VERIFICATION.md)** - Implementation verification report
+
+### Additional Documentation
+
+- **[PDF_EXPORT_GUIDE.md](PDF_EXPORT_GUIDE.md)** - PDF export options and WeasyPrint setup
+- **[PRODUCTION_READINESS.md](PRODUCTION_READINESS.md)** - Production deployment guide
+- **[electron/README.md](electron/README.md)** - Desktop UI documentation
 - **[File_analysis_app_plan](File_analysis_app_plan)** - Original requirements specification
+- **[docs/](docs/)** - Development notes and verification reports
 
 ## License
 
