@@ -44,12 +44,13 @@ def init_app(db_path=None):
     exports_dir = Path("exports")
     exports_dir.mkdir(exist_ok=True)
     
-    # Create upload folder
+    # Create upload folder with restrictive permissions
     upload_folder = Path(tempfile.mkdtemp(prefix="file_analysis_uploads_"))
+    upload_folder.chmod(0o700)  # Owner-only access
     
     # Initialize database
     if db_path is None:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")  # Add microseconds
         db_path = exports_dir / timestamp / "analysis.db"
         db_path.parent.mkdir(parents=True, exist_ok=True)
     
@@ -131,9 +132,6 @@ def analyze():
         exporter.export_record(record_id, str(html_path), ExportFormat.HTML)
         exporter.export_record(record_id, str(pdf_path), ExportFormat.PDF)
         
-        # Clean up uploaded file
-        file_path.unlink()
-        
         return jsonify({
             'success': True,
             'record_id': record_id,
@@ -160,6 +158,13 @@ def analyze():
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+    finally:
+        # Always clean up uploaded file
+        try:
+            if file_path.exists():
+                file_path.unlink()
+        except Exception as cleanup_error:
+            print(f"Warning: Failed to cleanup file: {cleanup_error}")
 
 @app.route('/api/records', methods=['GET'])
 def list_records():

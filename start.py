@@ -25,8 +25,9 @@ def check_dependencies():
         import magic
         import olefile
         print("✓ Python dependencies installed")
-    except ImportError as e:
-        print(f"✗ Missing Python dependency: {e.name}")
+    except (ImportError, ModuleNotFoundError) as e:
+        module_name = getattr(e, 'name', 'unknown')
+        print(f"✗ Missing Python dependency: {module_name}")
         print("\nRun: pip install -r requirements.txt")
         return False
     
@@ -188,7 +189,10 @@ def main():
     
     # Start API server in background
     print("\nStarting API server in background...")
-    api_process = subprocess.Popen([sys.executable, 'api_server.py', '--port', str(args.port)])
+    api_process = subprocess.Popen(
+        [sys.executable, 'api_server.py', '--port', str(args.port)],
+        shell=False
+    )
     time.sleep(2)  # Give server time to start
     
     try:
@@ -196,8 +200,12 @@ def main():
     finally:
         # Stop API server
         print("\nStopping API server...")
-        api_process.terminate()
-        api_process.wait()
+        try:
+            api_process.terminate()
+            api_process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            api_process.kill()
+            api_process.wait()
     
     return 0
 

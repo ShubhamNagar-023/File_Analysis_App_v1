@@ -105,7 +105,7 @@ class MainWindow(QMainWindow):
         exports_dir = Path("exports")
         exports_dir.mkdir(exist_ok=True)
         
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")  # Add microseconds
         db_path = exports_dir / timestamp / "analysis.db"
         db_path.parent.mkdir(parents=True, exist_ok=True)
         
