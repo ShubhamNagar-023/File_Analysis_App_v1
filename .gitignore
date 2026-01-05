@@ -113,3 +113,7 @@ Thumbs.db
 # Test files
 /tmp/
 *.tmp
+
+# PART 4 database files
+*.db
+.file_analyzer/
