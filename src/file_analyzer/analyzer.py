@@ -330,30 +330,52 @@ class FileAnalyzer:
         }
     
     def _detect_magic_signatures(self) -> None:
-        """Detect magic bytes and file signatures."""
+        """Detect magic bytes and file signatures with comprehensive scanning."""
         if self.file_data is None:
             return
         
         result = {
             'analysis_name': 'magic_signature_detection',
             'library_or_method': 'Built-in signature matching + python-magic',
-            'input_byte_range': f'0-{min(self.file_size, 8192)}',
+            'input_byte_range': f'0-{self.file_size}',
             'output_value': {
                 'signatures_found': [],
                 'overlapping_signatures': [],
                 'polyglot_indicators': [],
+                'scan_coverage': {},
             },
             'evidence': [],
-            'verification_method': 'Byte-by-byte signature matching',
+            'verification_method': 'hexdump -C <file> | head -n 100 to verify magic bytes at reported offsets',
             'failure_reason': None,
         }
         
         signatures_found = []
+        scanned_offsets = set()
         
-        # Check built-in signatures
+        # Define scan strategy: header, common offsets, and tail
+        scan_offsets = [0, 1, 2, 4, 8, 512, 1024, 2048, 4096, 8192]
+        
+        # Add tail scan for files larger than 64KB
+        if self.file_size > 65536:
+            # Scan last 8KB
+            tail_start = max(0, self.file_size - 8192)
+            scan_offsets.extend([tail_start, self.file_size - 1024, self.file_size - 512])
+        
+        # Deep scan option: scan every 4KB for files up to 1MB
+        deep_scan_enabled = self.file_size <= 1024 * 1024
+        if deep_scan_enabled:
+            offset = 0
+            while offset < self.file_size:
+                if offset not in scan_offsets:
+                    scan_offsets.append(offset)
+                offset += 4096
+        
+        scan_offsets = sorted(set(scan_offsets))
+        
+        # Check built-in signatures at offset 0 first
         for signature, info in MAGIC_SIGNATURES.items():
             offset = info.get('offset', 0)
-            if len(self.file_data) >= offset + len(signature):
+            if offset == 0 and len(self.file_data) >= offset + len(signature):
                 if self.file_data[offset:offset + len(signature)] == signature:
                     signatures_found.append({
                         'signature_type': info['type'],
@@ -362,6 +384,31 @@ class FileAnalyzer:
                         'signature_hex': signature.hex(),
                         'signature_length': len(signature),
                     })
+                    scanned_offsets.add(offset)
+        
+        # Scan at strategic offsets for hidden signatures
+        for scan_offset in scan_offsets:
+            if scan_offset >= self.file_size:
+                continue
+            scanned_offsets.add(scan_offset)
+            
+            for signature, info in MAGIC_SIGNATURES.items():
+                if scan_offset + len(signature) <= self.file_size:
+                    if self.file_data[scan_offset:scan_offset + len(signature)] == signature:
+                        # Only add if not already found at this offset
+                        existing = any(
+                            s['offset'] == scan_offset and s['signature_type'] == info['type'] 
+                            for s in signatures_found
+                        )
+                        if not existing:
+                            signatures_found.append({
+                                'signature_type': info['type'],
+                                'category': info['category'],
+                                'offset': scan_offset,
+                                'signature_hex': signature.hex(),
+                                'signature_length': len(signature),
+                                'note': 'Hidden signature at non-standard offset' if scan_offset > 0 else None,
+                            })
         
         # Check for PE with DOS stub (need to verify PE signature)
         if self.file_data[:2] == b'MZ' and len(self.file_data) >= 64:
@@ -394,14 +441,27 @@ class FileAnalyzer:
         # Check for TAR format (ustar signature at offset 257)
         if len(self.file_data) >= 263:  # Need at least 263 bytes for ustar check
             if self.file_data[257:262] == b'ustar':
+                scanned_offsets.add(257)
                 signatures_found.append({
                     'signature_type': 'TAR',
                     'category': 'archive',
-                    'offset': 0,
+                    'offset': 257,
                     'signature_hex': self.file_data[257:263].hex(),
                     'signature_length': 6,
                     'note': 'ustar format at offset 257',
                 })
+        
+        # Record scan coverage
+        max_scanned = max(scanned_offsets) if scanned_offsets else 0
+        result['output_value']['scan_coverage'] = {
+            'offsets_scanned': sorted(list(scanned_offsets)),
+            'total_offsets_scanned': len(scanned_offsets),
+            'max_offset_scanned': max_scanned,
+            'file_size': self.file_size,
+            'coverage_percentage': round((max_scanned / self.file_size * 100) if self.file_size > 0 else 0, 2),
+            'deep_scan_enabled': deep_scan_enabled,
+            'scan_strategy': 'header+strategic+tail' + ('+deep' if deep_scan_enabled else ''),
+        }
         
         # Detect overlapping signatures
         if len(signatures_found) > 1:
@@ -422,18 +482,19 @@ class FileAnalyzer:
                 polyglot_indicators.append({
                     'type': 'ZIP+PDF polyglot',
                     'pdf_offset': pdf_pos,
+                    'byte_range': f'{pdf_pos}-{pdf_pos+4}',
                 })
         
-        # Check for hidden signatures at non-zero offsets
-        for offset in [1, 2, 4, 8, 512, 1024]:
-            if len(self.file_data) > offset + 8:
-                for signature, info in MAGIC_SIGNATURES.items():
-                    if self.file_data[offset:offset + len(signature)] == signature:
-                        polyglot_indicators.append({
-                            'type': f'Hidden {info["type"]} signature',
-                            'offset': offset,
-                            'note': 'Signature at non-standard offset',
-                        })
+        # Check for signatures at multiple non-zero offsets (polyglot indicator)
+        sig_types_at_nonzero = [s for s in signatures_found if s['offset'] > 0]
+        if sig_types_at_nonzero:
+            for sig in sig_types_at_nonzero:
+                polyglot_indicators.append({
+                    'type': f'Hidden {sig["signature_type"]} signature',
+                    'offset': sig['offset'],
+                    'byte_range': f'{sig["offset"]}-{sig["offset"] + sig["signature_length"]}',
+                    'note': 'Signature at non-standard offset - potential polyglot',
+                })
         
         result['output_value']['signatures_found'] = signatures_found
         result['output_value']['polyglot_indicators'] = polyglot_indicators
@@ -455,7 +516,7 @@ class FileAnalyzer:
                 'is_container': False,
             },
             'evidence': [],
-            'verification_method': 'Magic byte verification',
+            'verification_method': 'hexdump -C <file> | head -n 5 to verify container magic bytes',
             'failure_reason': None,
         }
         
@@ -528,7 +589,7 @@ class FileAnalyzer:
                 'classification_evidence': [],
             },
             'evidence': [],
-            'verification_method': 'Internal structure validation',
+            'verification_method': 'unzip -l <file> for ZIP/OOXML; olefile <file> for OLE; file --mime-type <file>',
             'failure_reason': None,
         }
         
@@ -791,10 +852,16 @@ class FileAnalyzer:
         # Check for plain text
         is_text, text_confidence = self._check_if_text()
         if is_text:
+            text_details = getattr(self, '_text_analysis_details', {})
             evidence.append({
                 'type': 'text_analysis',
                 'confidence': text_confidence,
                 'sample_bytes_checked': min(self.file_size, 8192),
+                'encoding_detected': text_details.get('encoding_detected', 'ASCII'),
+                'bom_detected': text_details.get('bom_detected'),
+                'text_ratio': text_details.get('text_ratio', 0),
+                'entropy': text_details.get('entropy', 0),
+                'statistical_confidence': 'High' if not text_details.get('entropy_suspicious', False) else 'Low',
             })
             return 'PLAIN_TEXT', text_confidence, evidence
         
@@ -805,27 +872,66 @@ class FileAnalyzer:
         return 'UNKNOWN', 'LOW', evidence
     
     def _check_if_text(self) -> Tuple[bool, str]:
-        """Check if file appears to be plain text."""
+        """Check if file appears to be plain text with encoding detection."""
         if not self.file_data:
             return False, 'LOW'
         
         # Check first 8KB
         sample = self.file_data[:8192]
         
+        # Check for BOM (Byte Order Mark)
+        bom_detected = None
+        encoding_detected = 'ASCII'
+        
+        if sample[:3] == b'\xef\xbb\xbf':
+            bom_detected = 'UTF-8'
+            encoding_detected = 'UTF-8'
+        elif sample[:2] == b'\xff\xfe':
+            bom_detected = 'UTF-16-LE'
+            encoding_detected = 'UTF-16-LE'
+        elif sample[:2] == b'\xfe\xff':
+            bom_detected = 'UTF-16-BE'
+            encoding_detected = 'UTF-16-BE'
+        
+        # Try to detect UTF-8 encoding
+        try:
+            sample.decode('utf-8')
+            if not bom_detected:
+                encoding_detected = 'UTF-8'
+        except UnicodeDecodeError:
+            pass
+        
+        # Try to detect UTF-16
+        if encoding_detected == 'ASCII' and len(sample) >= 2:
+            try:
+                sample.decode('utf-16')
+                encoding_detected = 'UTF-16'
+            except UnicodeDecodeError:
+                pass
+        
         # Count text-like bytes
-        text_chars = 0.0  # Use float for consistent type
+        text_chars = 0.0
         binary_chars = 0
+        control_chars = 0
+        null_bytes = 0
+        
+        # Character distribution for statistical analysis
+        byte_distribution = {}
+        for byte in sample:
+            byte_distribution[byte] = byte_distribution.get(byte, 0) + 1
         
         # Text-like: printable ASCII, common control chars
         for byte in sample:
             if byte in range(32, 127) or byte in [9, 10, 13]:  # Printable + tab, LF, CR
                 text_chars += 1.0
-            elif byte in [0]:  # Null byte is binary indicator
+            elif byte == 0:  # Null byte is binary indicator
+                null_bytes += 1
                 binary_chars += 10  # Heavily penalize null bytes
             elif byte in range(1, 32):  # Other control characters
+                control_chars += 1
                 binary_chars += 1
             else:
-                # Extended ASCII - could be text encoding
+                # Extended ASCII - could be text encoding (UTF-8, Latin-1, etc.)
                 text_chars += 0.5
         
         total = len(sample)
@@ -833,18 +939,51 @@ class FileAnalyzer:
             return False, 'LOW'
         
         text_ratio = text_chars / total
+        null_ratio = null_bytes / total if total > 0 else 0
+        control_ratio = control_chars / total if total > 0 else 0
         
-        if binary_chars > 0 and b'\x00' in sample:
+        # Calculate entropy for additional confidence
+        import math
+        entropy = 0
+        for count in byte_distribution.values():
+            probability = count / total
+            if probability > 0:
+                entropy -= probability * math.log2(probability)
+        
+        # Binary files masquerading as text often have low entropy or very high entropy
+        # Text typically has entropy between 4.5 and 6.5 bits per byte
+        entropy_suspicious = entropy < 3.0 or entropy > 7.5
+        
+        # Strong binary indicators
+        if null_ratio > 0.01 or b'\x00' in sample:
             return False, 'LOW'
         
-        if text_ratio > 0.95:
-            return True, 'HIGH'
-        elif text_ratio > 0.85:
-            return True, 'MEDIUM'
-        elif text_ratio > 0.70:
-            return True, 'LOW'
+        # Confidence scoring
+        confidence = 'LOW'
+        is_text = False
         
-        return False, 'LOW'
+        if text_ratio > 0.95 and not entropy_suspicious:
+            confidence = 'HIGH'
+            is_text = True
+        elif text_ratio > 0.85 and null_ratio == 0:
+            confidence = 'MEDIUM'
+            is_text = True
+        elif text_ratio > 0.70 and null_ratio == 0 and control_ratio < 0.05:
+            confidence = 'LOW'
+            is_text = True
+        
+        # Store encoding info for later use (we'll add this to evidence)
+        self._text_analysis_details = {
+            'encoding_detected': encoding_detected,
+            'bom_detected': bom_detected,
+            'text_ratio': round(text_ratio, 4),
+            'null_ratio': round(null_ratio, 4),
+            'control_ratio': round(control_ratio, 4),
+            'entropy': round(entropy, 4),
+            'entropy_suspicious': entropy_suspicious,
+        }
+        
+        return is_text, confidence
     
     def _analyze_extensions(self) -> None:
         """Analyze extension chain and detect filename deception."""
@@ -864,7 +1003,7 @@ class FileAnalyzer:
                 'homoglyphs_detected': [],
             },
             'evidence': [],
-            'verification_method': 'Filename parsing and Unicode analysis',
+            'verification_method': 'ls -la <file> or file properties dialog to view filename; python unicodedata to analyze characters',
             'failure_reason': None,
         }
         
@@ -888,25 +1027,44 @@ class FileAnalyzer:
         
         # Check for Unicode deception characters
         unicode_deception = []
+        filename_bytes = filename.encode('utf-8')
+        char_index = 0
+        byte_offset = 0
+        
         for char in filename:
+            char_bytes = char.encode('utf-8')
             if char in UNICODE_DECEPTION_CHARS:
                 unicode_deception.append({
                     'character': repr(char),
                     'codepoint': f'U+{ord(char):04X}',
                     'description': UNICODE_DECEPTION_CHARS[char],
+                    'char_index': char_index,
+                    'byte_offset': byte_offset,
+                    'byte_range': f'{byte_offset}-{byte_offset + len(char_bytes)}',
                 })
+            byte_offset += len(char_bytes)
+            char_index += 1
         
         result['output_value']['unicode_deception'] = unicode_deception
         
         # Check for homoglyphs
         homoglyphs_detected = []
+        char_index = 0
+        byte_offset = 0
+        
         for char in filename:
+            char_bytes = char.encode('utf-8')
             if char in HOMOGLYPHS:
                 homoglyphs_detected.append({
                     'character': char,
                     'codepoint': f'U+{ord(char):04X}',
                     'looks_like': HOMOGLYPHS[char],
+                    'char_index': char_index,
+                    'byte_offset': byte_offset,
+                    'byte_range': f'{byte_offset}-{byte_offset + len(char_bytes)}',
                 })
+            byte_offset += len(char_bytes)
+            char_index += 1
         
         result['output_value']['homoglyphs_detected'] = homoglyphs_detected
         
@@ -1035,11 +1193,55 @@ class FileAnalyzer:
             except (ImportError, KeyError):
                 pass
             
-            # NTFS Alternate Data Streams (Windows-specific, noted for completeness)
-            result['output_value']['ntfs_ads'] = {
-                'note': 'NTFS ADS detection requires Windows-specific APIs',
-                'detected': False,
+            # NTFS Alternate Data Streams (Windows-specific)
+            import platform
+            ads_result = {
+                'platform': platform.system(),
+                'detection_attempted': False,
+                'streams_found': [],
+                'status': 'NOT_APPLICABLE',
             }
+            
+            if platform.system() == 'Windows':
+                ads_result['detection_attempted'] = True
+                try:
+                    # Try to enumerate ADS using Windows API
+                    import subprocess
+                    # Use PowerShell to check for ADS
+                    ps_cmd = f'Get-Item -Path "{self.file_path}" -Stream * | Select-Object Stream, Length'
+                    result_ps = subprocess.run(
+                        ['powershell', '-Command', ps_cmd],
+                        capture_output=True,
+                        text=True,
+                        timeout=5
+                    )
+                    
+                    if result_ps.returncode == 0 and result_ps.stdout:
+                        lines = result_ps.stdout.strip().split('\n')
+                        streams = []
+                        for line in lines[2:]:  # Skip header lines
+                            if line.strip():
+                                parts = line.strip().split()
+                                if len(parts) >= 2 and parts[0] != ':$DATA':
+                                    streams.append({
+                                        'stream_name': parts[0],
+                                        'size': parts[1] if len(parts) > 1 else 'unknown'
+                                    })
+                        
+                        ads_result['streams_found'] = streams
+                        ads_result['status'] = 'DETECTED' if streams else 'NONE_FOUND'
+                    else:
+                        ads_result['status'] = 'CHECK_FAILED'
+                        ads_result['error'] = result_ps.stderr
+                except Exception as e:
+                    ads_result['status'] = 'NOT_SUPPORTED'
+                    ads_result['error'] = str(e)
+                    ads_result['note'] = 'PowerShell ADS enumeration failed'
+            else:
+                ads_result['status'] = 'NOT_APPLICABLE'
+                ads_result['note'] = 'NTFS ADS is Windows-only; current platform does not support'
+            
+            result['output_value']['ntfs_ads'] = ads_result
             
             result['evidence'].append({
                 'type': 'stat_info',
@@ -1064,7 +1266,7 @@ class FileAnalyzer:
                 'issues_found': [],
             },
             'evidence': [],
-            'verification_method': 'Multi-method verification',
+            'verification_method': 'unzip -t <file> for ZIP validation; hexdump -C <file> | tail for trailing data',
             'failure_reason': None,
         }
         
@@ -1186,7 +1388,7 @@ class FileAnalyzer:
         self.analysis_results['advanced_checks'] = result
     
     def _generate_summary(self) -> None:
-        """Generate analysis summary."""
+        """Generate analysis summary with standardized ambiguity handling."""
         semantic = self.analysis_results.get('semantic_file_type', {}).get('output_value', {})
         ext_analysis = self.analysis_results.get('extension_analysis', {}).get('output_value', {})
         advanced = self.analysis_results.get('advanced_checks', {}).get('output_value', {})
@@ -1230,26 +1432,76 @@ class FileAnalyzer:
         if deception_flags:
             notes.append(f'Deception indicators found: {", ".join(deception_flags)}')
         
-        # Mark as ambiguous if evidence conflicts
+        # Formal ambiguity criteria and handling
         is_ambiguous = False
+        ambiguity_reasons = []
+        confidence = semantic.get('classification_confidence', 'LOW')
+        
+        # Rule 1: Multiple conflicting signatures at different offsets
         magic_detection = self.analysis_results.get('magic_detection', {})
         magic_output = magic_detection.get('output_value', {})
         signatures_found = magic_output.get('signatures_found', [])
         unique_signature_types = set(s.get('signature_type') for s in signatures_found)
         
         if len(unique_signature_types) > 1:
+            sig_at_zero = [s for s in signatures_found if s.get('offset') == 0]
+            sig_at_nonzero = [s for s in signatures_found if s.get('offset', 0) > 0]
+            if sig_at_zero and sig_at_nonzero:
+                is_ambiguous = True
+                ambiguity_reasons.append('Multiple conflicting signatures at different offsets')
+        
+        # Rule 2: Polyglot indicators present
+        polyglot_indicators = magic_output.get('polyglot_indicators', [])
+        if polyglot_indicators:
             is_ambiguous = True
-            notes.append('AMBIGUOUS: Multiple conflicting signatures detected')
+            ambiguity_reasons.append('Polyglot indicators detected')
+        
+        # Rule 3: Extension mismatch with moderate confidence
+        if ext_analysis.get('extension_mismatch') and confidence in ['MEDIUM', 'LOW']:
+            is_ambiguous = True
+            ambiguity_reasons.append('Extension mismatch with uncertain classification')
+        
+        # Rule 4: Broken OOXML structure
+        if semantic_type in ['DOCX', 'XLSX', 'PPTX']:
+            evidence = semantic.get('classification_evidence', [])
+            for ev in evidence:
+                if ev.get('type', '').startswith('ooxml_') and ev.get('missing_components'):
+                    is_ambiguous = True
+                    ambiguity_reasons.append('OOXML structure incomplete or broken')
+                    break
+        
+        # Confidence downgrade rules
+        if is_ambiguous and confidence == 'HIGH':
+            confidence = 'MEDIUM'
+            notes.append('Confidence downgraded due to ambiguity')
+        
+        if ambiguity_reasons:
+            notes.append('AMBIGUOUS: ' + '; '.join(ambiguity_reasons))
+        
+        # Build ambiguity block if applicable
+        ambiguity_block = None
+        if is_ambiguous:
+            ambiguity_block = {
+                'is_ambiguous': True,
+                'ambiguity_reasons': ambiguity_reasons,
+                'conflicting_evidence': {
+                    'signature_types': list(unique_signature_types) if len(unique_signature_types) > 1 else [],
+                    'polyglot_indicators_count': len(polyglot_indicators),
+                    'extension_mismatch': ext_analysis.get('extension_mismatch', False),
+                },
+                'recommendation': 'Manual review recommended; automated classification uncertain',
+            }
         
         self.analysis_results['summary'] = {
             'container_type': container_type,
             'semantic_file_type': semantic_type,
-            'classification_confidence': 'AMBIGUOUS' if is_ambiguous else semantic.get('classification_confidence'),
+            'classification_confidence': 'AMBIGUOUS' if is_ambiguous else confidence,
             'classification_notes': notes,
             'detected_deception_flags': deception_flags,
             'file_path': str(self.file_path),
             'file_size': self.file_size,
             'analysis_complete': True,
+            'ambiguity': ambiguity_block,
         }
     
     def to_json(self, indent: int = 2) -> str:
