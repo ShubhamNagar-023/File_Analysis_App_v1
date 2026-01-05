@@ -117,3 +117,9 @@ Thumbs.db
 # PART 4 database files
 *.db
 .file_analyzer/
+
+# Export directory for analysis reports
+exports/
+
+# Test output directory
+test_output/

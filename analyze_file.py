@@ -20,6 +20,7 @@ import json
 import sys
 import tempfile
 import os
+from datetime import datetime
 from pathlib import Path
 from src.file_analyzer.analyzer import analyze_file
 from src.file_analyzer.deep_analyzer import deep_analyze_file
@@ -39,6 +40,27 @@ def print_section(title):
     """Print a section header"""
     print("\n" + "=" * 80)
     print(f"Running {title}...")
+
+
+def create_export_directory(base_path: Path = None) -> Path:
+    """
+    Create a persistent export directory.
+    
+    Args:
+        base_path: Base directory for exports. If None, uses 'exports' in current directory.
+    
+    Returns:
+        Path to the timestamped export directory.
+    """
+    if base_path is None:
+        base_path = Path.cwd() / "exports"
+    
+    # Create timestamped subdirectory
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    export_dir = base_path / timestamp
+    export_dir.mkdir(parents=True, exist_ok=True)
+    
+    return export_dir
 
 
 def main():
@@ -107,70 +129,92 @@ def main():
         # PART 4: Persistence, CLI & IPC (Data Durability Layer)
         print_section("PART 4: Persistence, CLI & IPC")
         
-        # Create temporary database for testing
-        with tempfile.TemporaryDirectory() as tmpdir:
-            db_path = Path(tmpdir) / "analysis.db"
-            
-            # Initialize database
-            db = AnalysisDatabase(str(db_path))
-            
-            # Create a case and session
-            case_id = db.create_case(
-                name=f"Analysis of {Path(file_path).name}",
-                description=f"Automated analysis of {semantic_type} file",
-                metadata={
-                    "analyst": "automated",
-                    "file_type": semantic_type,
-                    "original_path": file_path
-                }
-            )
-            
-            session_id = db.create_session(
-                case_id=case_id,
-                name=f"Session for {Path(file_path).name}",
-                description=f"Analysis session created at {Path(file_path).parent}"
-            )
-            
-            # Store analysis record
-            record_id = db.import_analysis(
-                session_id=session_id,
-                part1_results=part1,
-                part2_results=part2,
-                part3_results=part3,
-            )
-            
-            print(f"✅ Analysis persisted to database")
-            print(f"   Case ID: {case_id}")
-            print(f"   Session ID: {session_id}")
-            print(f"   Record ID: {record_id}")
-            
-            # Retrieve and verify
-            retrieved_record = db.get_record(record_id)
-            print(f"\n✅ Analysis retrieved successfully")
-            print(f"   File: {retrieved_record['file_path']}")
-            print(f"   Created At: {retrieved_record['created_at']}")
-            print(f"   Data integrity verified: ✓")
-            
-            # Export to JSON
-            exporter = Exporter(db)
-            export_path = Path(tmpdir) / f"{Path(file_path).stem}_analysis.json"
-            exported_path = exporter.export_record(record_id, str(export_path), ExportFormat.JSON)
-            
-            print(f"\n✅ Analysis exported to JSON")
-            print(f"   Export path: {exported_path}")
-            print(f"   Export size: {Path(exported_path).stat().st_size} bytes")
-            
-            # Query records
-            session_analyses = db.query_records(session_id=session_id)
-            print(f"\n✅ Session query successful")
-            print(f"   Records in session: {len(session_analyses)}")
-            
-            # Close database
-            db.close()
-            print(f"\n✅ Database closed cleanly")
-            
-            # Store for final summary
-            final_export_verified = Path(exported_path).exists()
+        # Create persistent export directory
+        export_dir = create_export_directory()
+        print(f"📁 Export Directory: {export_dir}")
+        
+        # Create database in export directory
+        db_path = export_dir / "analysis.db"
+        
+        # Initialize database
+        db = AnalysisDatabase(str(db_path))
+        
+        # Create a case and session
+        case_id = db.create_case(
+            name=f"Analysis of {Path(file_path).name}",
+            description=f"Automated analysis of {semantic_type} file",
+            metadata={
+                "analyst": "automated",
+                "file_type": semantic_type,
+                "original_path": file_path
+            }
+        )
+        
+        session_id = db.create_session(
+            case_id=case_id,
+            name=f"Session for {Path(file_path).name}",
+            description=f"Analysis session created at {Path(file_path).parent}"
+        )
+        
+        # Store analysis record
+        record_id = db.import_analysis(
+            session_id=session_id,
+            part1_results=part1,
+            part2_results=part2,
+            part3_results=part3,
+        )
+        
+        print(f"✅ Analysis persisted to database")
+        print(f"   Case ID: {case_id}")
+        print(f"   Session ID: {session_id}")
+        print(f"   Record ID: {record_id}")
+        
+        # Retrieve and verify
+        retrieved_record = db.get_record(record_id)
+        print(f"\n✅ Analysis retrieved successfully")
+        print(f"   File: {retrieved_record['file_path']}")
+        print(f"   Created At: {retrieved_record['created_at']}")
+        print(f"   Data integrity verified: ✓")
+        
+        # Export to all three formats
+        exporter = Exporter(db)
+        base_filename = Path(file_path).stem
+        
+        # Export to JSON
+        json_path = export_dir / f"{base_filename}_analysis.json"
+        exported_json = exporter.export_record(record_id, str(json_path), ExportFormat.JSON)
+        
+        # Export to HTML
+        html_path = export_dir / f"{base_filename}_analysis.html"
+        exported_html = exporter.export_record(record_id, str(html_path), ExportFormat.HTML)
+        
+        # Export to PDF
+        pdf_path = export_dir / f"{base_filename}_analysis.pdf"
+        exported_pdf = exporter.export_record(record_id, str(pdf_path), ExportFormat.PDF)
+        
+        print(f"\n✅ Analysis exported to all formats")
+        print(f"   JSON: {exported_json}")
+        print(f"   JSON Size: {Path(exported_json).stat().st_size:,} bytes")
+        print(f"   HTML: {exported_html}")
+        print(f"   HTML Size: {Path(exported_html).stat().st_size:,} bytes")
+        print(f"   PDF: {exported_pdf}")
+        print(f"   PDF Size: {Path(exported_pdf).stat().st_size:,} bytes")
+        
+        # Query records
+        session_analyses = db.query_records(session_id=session_id)
+        print(f"\n✅ Session query successful")
+        print(f"   Records in session: {len(session_analyses)}")
+        
+        # Close database
+        db.close()
+        print(f"\n✅ Database closed cleanly")
+        
+        # Store for final summary
+        exports_verified = all([
+            Path(exported_json).exists(),
+            Path(exported_html).exists(),
+            Path(exported_pdf).exists()
+        ])
         
         # Final Summary
         print_banner("ANALYSIS COMPLETE - ALL FOUR PARTS", "=")
@@ -192,7 +236,8 @@ def main():
         
         print(f"\n💾 Persistence:")
         print(f"   Database Operations: 5/5 completed")
-        print(f"   Export Operations: 1/1 completed")
+        print(f"   Export Operations: 3/3 completed (JSON, HTML, PDF)")
+        print(f"   Export Directory: {export_dir}")
         print(f"   Data Integrity: ✅ Verified")
         
         # Status indicator

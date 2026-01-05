@@ -17,6 +17,14 @@ python-magic>=0.4.27
 olefile>=0.46
 
 # ============================================================================
+# REQUIRED FOR EXPORT FEATURES
+# ============================================================================
+
+# PDF Generation (for export reports)
+# WeasyPrint converts HTML to PDF - required for PDF export feature
+weasyprint>=60.0
+
+# ============================================================================
 # OPTIONAL ENHANCEMENTS (Not Required)
 # ============================================================================
 #
