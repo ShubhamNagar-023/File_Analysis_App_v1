@@ -1,0 +1,896 @@
+PART 1: FILE INGESTION & EXACT FILE-TYPE RESOLUTION
+
+> **Project Context & Importance**
+>
+> You are assisting in the development of a **professional-grade, desktop-only file analysis and forensic inspection application** intended for **security analysis, malware triage, digital forensics, and file integrity verification**. This system must operate entirely **offline**, must never execute or modify analyzed files, and must produce **byte-accurate, reproducible, and externally verifiable results**.
+>
+> A critical requirement of this project is **exact semantic file-type resolution**. Container formats (ZIP, OLE, TAR) are **not final classifications** when higher-level formats exist. For example, DOC ≠ DOCX ≠ ZIP, and misclassifying OOXML documents as ZIP is considered a failure.
+>
+> ---
+>
+> **CURRENT TASK — PART 1 ONLY: FILE INGESTION, FILE IDENTITY & EXACT FILE-TYPE RESOLUTION**
+>
+> You are implementing **PART 1 only**. You are forbidden from implementing UI, persistence, risk scoring, heuristics, deep content parsing, or future features.
+>
+> **Input Requirement:**
+>
+> * A real file path will be provided after you confirm readiness.
+>
+> ---
+>
+> **Analyses You MUST Perform (ONLY THESE):**
+>
+> 1. **Secure File Ingestion**
+>
+>    * Open the file in binary, read-only mode
+>    * Read the entire byte stream
+>    * Verify bytes read exactly match filesystem size
+>    * Detect truncation, sparse files, symlinks, or hard links
+> 2. **Cryptographic File Identity**
+>
+>    * Compute MD5, SHA-1, SHA-256, SHA-512 over the full file
+>    * For each hash include algorithm, byte range, value, and external verification method
+> 3. **Magic-Byte & Signature Detection**
+>
+>    * Identify all valid magic headers and their byte offsets
+>    * Detect multiple, overlapping, or misplaced signatures
+>    * Detect polyglot indicators
+> 4. **Container Type Identification (NOT FINAL TYPE)**
+>
+>    * Detect base container if present (ZIP, OLE, PDF, PE/ELF/Mach-O, TAR/7Z/RAR, or none)
+> 5. **Exact Semantic File-Type Resolution (CRITICAL)**
+>
+>    * Resolve the true semantic file type using internal structure and invariants
+>    * ZIP/OLE/TAR are intermediate containers, not final types
+>    * DOC, DOCX, XLS, XLSX, PPT, PPTX must be classified distinctly
+>    * Extension alone must never be trusted
+>    * For classification, provide container_type, semantic_file_type, classification_confidence, and classification_evidence (paths, signatures, invariants)
+>    * If evidence conflicts, mark the result as AMBIGUOUS
+> 6. **Extension Chain & Filename Deception Analysis**
+>
+>    * Extract the full extension chain
+>    * Detect double or hidden extensions
+>    * Detect extension mismatch with semantic type
+>    * Detect Unicode filename deception (RTL overrides, homoglyphs, invisible characters)
+>    * Provide both raw and normalized filenames
+> 7. **Filesystem Metadata (Read-Only)**
+>
+>    * Extract created, modified, accessed timestamps
+>    * Extract permissions and ownership (if available)
+>    * Detect NTFS alternate data streams (if applicable)
+>
+> ---
+>
+> **Supported Semantic File Types (PART 1):**
+>
+> * Plain text
+> * Image (JPEG / PNG / GIF)
+> * PDF
+> * Office legacy (DOC / XLS / PPT)
+> * Office OOXML (DOCX / XLSX / PPTX)
+> * Archive (ZIP / TAR / 7Z / RAR)
+> * Executable (PE / ELF / Mach-O)
+> * Unknown / Unsupported
+>
+> ---
+>
+> **Output Requirements (MANDATORY):**
+>
+> * Output must be structured JSON only
+> * Every result must be derived from real file bytes or filesystem metadata
+> * Each analysis item must include:
+>
+>   * analysis_name
+>   * library_or_method
+>   * input_byte_range
+>   * output_value
+>   * evidence
+>   * verification_method
+>   * failure_reason (if applicable)
+> * Include a summary block with container_type, semantic_file_type, classification_confidence, classification_notes, and detected_deception_flags
+>
+> ---
+>
+> **Advanced Checks (MANDATORY):**
+>
+> * Correct extension but wrong magic
+> * Correct magic but broken internal invariants
+> * OOXML containers missing required components
+> * Extra undocumented components in OOXML
+> * Trailing data beyond logical EOF
+> * Multiple valid format signatures in one file
+>
+> ---
+>
+> **Strict Constraints:**
+>
+> * NO treating ZIP as final type for DOCX/XLSX/PPTX
+> * NO guessing file type from extension
+> * NO deep content parsing
+> * NO UI, persistence, or scoring
+> * NO mock data or placeholder values
+>
+> ---
+>
+> **Failure Behavior:**
+>
+> * If classification cannot be proven, return partial results and mark type as AMBIGUOUS
+> * Silent failure is forbidden
+>
+> ---
+>
+> **Before proceeding:**
+>
+> * Confirm you understand semantic file type ≠ container
+> * Confirm you will wait for a real file path
+> * Do not produce code or results yet
+>
+> End your response with this exact sentence:
+> **“I understand PART 1 constraints and am ready to receive a real file path to perform forensic-sound file ingestion and exact semantic file-type resolution using real libraries and real file data only.”**
+
+---
+
+
+PART 2: DEEP FILE-TYPE-AWARE STATIC ANALYSIS
+
+> **Project Context & Continuity**
+>
+> You are continuing work on a **professional-grade, desktop-only file analysis and forensic inspection application** designed for **security analysis, malware triage, digital forensics, and file integrity verification**.
+>
+> PART 1 has already been completed and validated, establishing **forensic file identity, cryptographic hashes, magic-byte detection, container identification, and exact semantic file-type resolution** (e.g., DOC ≠ DOCX ≠ ZIP). Those results are authoritative and must not be re-implemented or altered.
+>
+> This system operates entirely **offline**, never executes or modifies analyzed files, and all results must be **byte-accurate, reproducible, and externally verifiable**.
+>
+> ---
+>
+> **CURRENT TASK — PART 2 ONLY: DEEP, NON-EXECUTING STATIC FILE ANALYSIS**
+>
+> You are implementing **PART 2 only**. This part performs **deep static inspection based on the semantic file type determined in PART 1**.
+>
+> You are strictly forbidden from implementing UI, persistence, risk scoring, heuristics, or threat labeling in this part.
+>
+> **Input:**
+>
+> * A real file path
+> * Validated PART 1 output, including `semantic_file_type` and `container_type`
+>
+> ---
+>
+> ## 🔒 GLOBAL RULES (NON-NEGOTIABLE)
+>
+> * Analysis MUST be **file-type specific**
+> * Metadata or attributes not valid for the detected semantic file type MUST NOT be reported
+> * Container formats (ZIP, OLE, TAR) are analyzed **only as containers**, not as final types
+> * All findings must reference **real byte offsets or structural elements**
+> * No execution, emulation, or dynamic analysis
+>
+> ---
+>
+> ## 🧠 ANALYSES YOU MUST PERFORM (ONLY THESE)
+>
+> ### 1️⃣ Universal Static Analysis (ALL FILE TYPES)
+>
+> * Global Shannon entropy (entire file)
+> * Section-wise entropy using fixed-size blocks
+> * Entropy variance and anomaly regions with byte offsets
+> * Detection of:
+>
+>   * Trailing data beyond logical EOF
+>   * Padding abuse and slack space
+>   * Multiple internal object boundaries
+>   * Structural corruption indicators
+> * Printable string extraction with:
+>
+>   * Encoding detection
+>   * Byte offsets
+>   * Length and entropy
+> * String classification:
+>
+>   * URLs
+>   * IP addresses
+>   * Emails
+>   * File paths
+>   * Commands / suspicious tokens
+>
+> ---
+>
+> ### 2️⃣ Container-Level Analysis (IF APPLICABLE)
+>
+> **ZIP / OOXML Containers**
+>
+> * Enumerate all entries with offsets and compression methods
+> * Detect missing or malformed central directory
+> * Detect ZIP bombs or abnormal compression ratios
+> * Detect extra data fields and undocumented entries
+> * Correlate container structure with semantic type (e.g., DOCX invariants)
+>
+> **OLE Compound Files**
+>
+> * Validate FAT, MiniFAT, and directory streams
+> * Detect orphaned or hidden streams
+> * Detect stream name manipulation and padding abuse
+>
+> ---
+>
+> ### 3️⃣ File-Type-Specific Deep Static Analysis (MANDATORY)
+>
+> #### 📄 Plain Text
+>
+> * Encoding and BOM detection
+> * Line ending consistency
+> * Non-printable character ratio
+> * Hidden binary blobs inside text
+>
+> #### 🖼️ Image Files (JPEG / PNG / GIF)
+>
+> * Image dimensions and color depth
+> * Compression artifacts
+> * EXIF / XMP / ICC presence and offsets
+> * Thumbnail mismatch detection
+> * Metadata vs pixel data inconsistency
+> * Steganography indicators (entropy & structure-based only)
+>
+> #### 📕 PDF Files
+>
+> * PDF version and header integrity
+> * Object count and cross-reference validation
+> * Embedded file detection
+> * JavaScript presence
+> * Incremental update chains
+> * Encryption and permission flags
+> * Object stream anomalies
+>
+> #### 📝 Office Legacy (DOC / XLS / PPT – OLE)
+>
+> * OLE stream enumeration
+> * Macro stream detection
+> * Auto-execution indicators
+> * Obfuscated macro markers
+> * Embedded object detection
+> * Revision and template artifacts
+>
+> #### 📝 Office OOXML (DOCX / XLSX / PPTX)
+>
+> * Validate required OOXML parts
+> * Detect missing or duplicated core parts
+> * Analyze relationships (.rels) integrity
+> * Macro presence (VBA project)
+> * External relationship references
+> * Custom XML abuse
+> * Mismatch between declared and actual content types
+>
+> #### 📦 Archives
+>
+> * File tree reconstruction with offsets
+> * Nested archive recursion (depth-limited)
+> * Encrypted entry detection
+> * Per-file entropy and size anomalies
+>
+> #### ⚙️ Executables (PE / ELF / Mach-O)
+>
+> * Header sanity checks
+> * Section table validation
+> * Section entropy and permissions
+> * Import / export tables
+> * Entry point anomalies
+> * Packing indicators (static only)
+>
+> ---
+>
+> ## 📤 OUTPUT REQUIREMENTS (MANDATORY)
+>
+> Output MUST be **structured JSON only**.
+>
+> For EACH finding:
+>
+> * `finding_id`
+> * `finding_type`
+> * `semantic_file_type`
+> * `source_library_or_method`
+> * `byte_offset_start`
+> * `byte_offset_end` (if applicable)
+> * `extracted_value`
+> * `confidence`
+> * `verification_reference`
+> * `failure_reason` (if applicable)
+>
+> Findings must be grouped by:
+>
+> * Universal
+> * Container-level
+> * File-type-specific
+>
+> ---
+>
+> ## 🚫 STRICTLY FORBIDDEN
+>
+> * Risk scoring or severity labels
+> * Threat names or malware family guesses
+> * UI output
+> * Persistence or database storage
+> * Metadata not valid for the detected semantic file type
+> * Mock or placeholder values
+>
+> ---
+>
+> ## 🛑 FAILURE BEHAVIOR
+>
+> * If a parser fails, report the failure explicitly
+> * Partial results must still be returned
+> * Silent failure is forbidden
+>
+> ---
+>
+> **Before proceeding:**
+>
+> * Confirm you will rely strictly on PART 1 semantic file-type resolution
+> * Confirm you will not perform scoring or UI work
+> * Confirm you will wait for a real file path
+>
+> End your response with this exact sentence:
+> **“I understand PART 2 constraints and am ready to receive a real file path to perform deep, file-type-aware, non-executing static analysis using real libraries and real file data only.”**
+
+---
+
+### ✅ What this PART 2 guarantees
+
+* No ZIP-instead-of-DOCX mistakes
+* Deep static coverage beyond common tools
+* Byte-offset-accurate forensic findings
+* Zero hallucinated metadata
+* A clean foundation for PART 3 scoring
+
+---
+
+
+PART 3: RULES, CORRELATION & EXPLAINABLE RISK SCORING
+
+> **Project Context & Continuity**
+>
+> You are continuing work on a **professional-grade, desktop-only file analysis and forensic inspection application** used for **security analysis, malware triage, digital forensics, and integrity verification**.
+>
+> PART 1 (file ingestion & exact semantic file-type resolution) and PART 2 (deep, file-type-aware static analysis) have already been completed and validated. Their outputs are **authoritative, immutable, and evidence-backed**.
+>
+> This system operates entirely **offline**, never executes analyzed files, and must produce **deterministic, reproducible, and explainable results**.
+>
+> ---
+>
+> **CURRENT TASK — PART 3 ONLY: RULES, CORRELATION & EXPLAINABLE SCORING**
+>
+> You are implementing **PART 3 only**.
+>
+> This part **does not parse files**, **does not extract metadata**, and **does not perform UI or persistence work**.
+>
+> You must consume **only structured outputs from PART 1 and PART 2** and convert them into **evidence-based detections, correlations, and risk assessments**.
+>
+> **Input:**
+>
+> * Structured JSON outputs from PART 1 and PART 2
+> * Optional locally supplied rule sets (e.g., YARA)
+>
+> ---
+>
+> ## 🔒 GLOBAL NON-NEGOTIABLE RULES
+>
+> * No analysis without evidence from PART 1 or PART 2
+> * No scoring without a documented rule or heuristic
+> * No cloud lookups or online intelligence
+> * No guessing intent, malware family, or threat names
+> * Same inputs MUST always produce the same outputs
+>
+> ---
+>
+> ## 🧠 ANALYSES YOU MUST PERFORM (ONLY THESE)
+>
+> ### 1️⃣ Rule-Based Detection
+>
+> * Apply YARA rules to real file data (byte-accurate)
+> * Record for each match:
+>
+>   * Rule ID
+>   * Namespace
+>   * Matched strings
+>   * Byte offsets
+> * Rules must be treated as **evidence generators**, not verdicts
+>
+> ---
+>
+> ### 2️⃣ Fuzzy Hashing & Similarity
+>
+> * Compute fuzzy hashes:
+>
+>   * ssdeep
+>   * TLSH
+> * Perform similarity comparison **only** if reference hashes are supplied locally
+> * Do NOT infer malware lineage or family names
+>
+> ---
+>
+> ### 3️⃣ Deterministic Heuristic Evaluation
+>
+> You MUST define heuristics explicitly.
+>
+> Examples (non-exhaustive):
+>
+> * High entropy + executable section mismatch
+> * Macro presence + auto-execution indicators
+> * OOXML external relationships
+> * PDF JavaScript + incremental updates
+> * Extension mismatch + semantic type conflict
+>
+> Each heuristic MUST specify:
+>
+> * Trigger conditions
+> * Required evidence IDs
+> * Weight contribution
+> * Failure conditions
+>
+> ---
+>
+> ### 4️⃣ Evidence-Based Risk Scoring
+>
+> * Compute scores using **weighted, additive logic**
+> * Scores must be traceable to:
+>
+>   * Rule matches
+>   * Heuristic triggers
+>   * Structural anomalies
+> * Provide:
+>
+>   * Raw score
+>   * Normalized score
+>   * Confidence value
+> * Severity levels allowed:
+>
+>   * Informational
+>   * Low
+>   * Medium
+>   * High
+>   * Critical
+>
+> ---
+>
+> ### 5️⃣ Correlation & Context (Session-Level)
+>
+> * Correlate findings across multiple files **within the same session**
+> * Examples:
+>
+>   * Identical fuzzy hashes
+>   * Shared embedded objects
+>   * Reused macros or scripts
+> * Correlation must reference concrete evidence IDs
+>
+> ---
+>
+> ## 📤 OUTPUT REQUIREMENTS (MANDATORY)
+>
+> Output MUST be **structured JSON only**.
+>
+> For EACH detection, heuristic, or score:
+>
+> * `id`
+> * `type` (rule | heuristic | correlation | score)
+> * `semantic_file_type`
+> * `evidence_references` (IDs from PART 1 / PART 2)
+> * `logic_applied`
+> * `score_contribution`
+> * `final_score` (if applicable)
+> * `confidence`
+> * `severity`
+> * `explanation` (plain, human-readable)
+> * `reproducibility_notes`
+> * `failure_reason` (if applicable)
+>
+> No score may exist without evidence references.
+>
+> ---
+>
+> ## 🚫 STRICTLY FORBIDDEN
+>
+> * Threat or malware family naming
+> * Black-box scoring
+> * “Likely malicious” without explanation
+> * Cloud or reputation services
+> * UI rendering
+> * Persistence or database writes
+> * Mock or placeholder logic
+>
+> ---
+>
+> ## 🛑 FAILURE BEHAVIOR
+>
+> * If a rule or heuristic cannot be applied, report it explicitly
+> * Partial scoring is allowed; silent failure is forbidden
+>
+> ---
+>
+> **Before proceeding:**
+>
+> * Confirm you will use ONLY PART 1 and PART 2 outputs
+> * Confirm all scoring is explainable and deterministic
+> * Confirm you will wait for real input data
+>
+> End your response with this exact sentence:
+> **“I understand PART 3 constraints and am ready to process verified PART 1 and PART 2 outputs to produce deterministic, evidence-based detections and explainable risk scoring using real rules only.”**
+
+---
+
+### ✅ What PART 3 Achieves
+
+* No hallucinated threats
+* No black-box decisions
+* Full forensic traceability
+* Court-defensible scoring logic
+* Clean handoff to persistence & UI
+
+---
+
+PART 4: PERSISTENCE, CLI & IPC (DATA DURABILITY LAYER)
+
+> **Project Context & Continuity**
+>
+> You are continuing work on a **professional-grade, desktop-only file analysis and forensic inspection application** operating entirely **offline**.
+>
+> PART 1 (file ingestion & exact semantic type), PART 2 (deep file-type-aware static analysis), and PART 3 (rules, correlation & explainable scoring) are **completed and validated**. Their outputs are **authoritative and immutable**.
+>
+> PART 4 introduces **no new analysis**. Its sole purpose is to make existing results **durable, queryable, automatable, and safely consumable by a desktop UI**.
+
+---
+
+## **CURRENT TASK — PART 4 ONLY: PERSISTENCE, CLI & IPC**
+
+You are implementing **PART 4 only**.
+You are forbidden from parsing files, extracting metadata, recalculating scores, or rendering UI.
+
+**Input:**
+
+* Structured JSON outputs from PART 1, PART 2, and PART 3 only.
+
+---
+
+## 🔒 GLOBAL NON-NEGOTIABLE RULES
+
+* No modification of analysis outputs
+* No recomputation or reinterpretation
+* No in-memory-only storage
+* No UI rendering
+* Deterministic reads/writes only
+* All schemas must be explicit and validated
+
+---
+
+## 🧱 FEATURES YOU MUST IMPLEMENT (ONLY THESE)
+
+### 1️⃣ Persistence Layer (Local, Deterministic)
+
+* Use **SQLite or DuckDB** (local file database)
+* Store **immutable analysis records** (append-only; no overwrites)
+* Support **case** and **session** organization
+* Maintain referential integrity between:
+
+  * Files
+  * PART 1 identity
+  * PART 2 findings
+  * PART 3 rules/scores/correlations
+* Store provenance:
+
+  * Timestamps
+  * Tool/library versions
+  * Schema versions
+* Detect and report partial writes or corruption
+
+---
+
+### 2️⃣ Canonical Data Schemas (MANDATORY)
+
+Define and enforce JSON schemas for:
+
+* File identity (PART 1)
+* Findings (PART 2)
+* Rules & scores (PART 3)
+* Sessions & cases
+* Errors & failures
+
+All stored and transmitted data **MUST validate** against schemas.
+
+---
+
+### 3️⃣ Command-Line Interface (CLI) — FULL PARITY
+
+Provide a CLI that can:
+
+* Create and list cases/sessions
+* Import analysis results (from PART 1–3 JSON)
+* Query files, findings, and scores
+* Filter by file type, severity, rule, time
+* Export reports
+
+**Parity Rule:**
+Anything retrievable via IPC **must** be retrievable via CLI with identical results.
+
+---
+
+### 4️⃣ IPC Contracts (Python ↔ Electron)
+
+* Define explicit IPC request/response schemas
+* Support read-only operations:
+
+  * List cases/sessions
+  * Fetch file summaries
+  * Fetch findings and scores
+  * Fetch timelines and correlations
+* Enforce schema validation on every IPC message
+* Propagate errors without suppression
+
+---
+
+### 5️⃣ Export & Reporting (FROM STORED DATA ONLY)
+
+Export **real stored data** to:
+
+* **JSON** (lossless, canonical)
+* **PDF** (human-readable)
+* **HTML** (portable)
+
+Reports must include:
+
+* Case/session identifiers
+* Provenance (timestamps, versions)
+* Explicit references to evidence IDs
+
+No fabricated or reformatted data beyond presentation.
+
+---
+
+## 📤 REQUIRED OUTPUTS (MANDATORY)
+
+You MUST provide:
+
+* Database schema (tables, relationships)
+* JSON schemas (all entities)
+* CLI command list with arguments
+* IPC message schemas (request/response)
+* Example exports generated **only from stored real data**
+
+---
+
+## 🚫 STRICTLY FORBIDDEN
+
+* Any analysis or scoring logic
+* UI code or screenshots
+* In-memory-only data handling
+* Data mutation or normalization
+* Mock records or placeholder exports
+
+---
+
+## 🧪 VALIDATION RULES
+
+* Reloaded records must byte-match original inputs
+* CLI and IPC queries must return identical datasets
+* Schema validation failures must be explicit
+* Exported reports must match stored data exactly
+
+---
+
+## 🛑 FAILURE BEHAVIOR
+
+* Any persistence or IPC failure must be returned explicitly
+* Partial saves must be detectable and reported
+* Silent data loss is forbidden
+
+---
+
+## BEFORE PROCEEDING
+
+Confirm that:
+
+1. PART 4 introduces **no new analysis**
+2. You will consume **only** PART 1–3 outputs
+3. You will not generate UI or mock data
+
+End your response with this exact sentence:
+
+> **“I understand PART 4 constraints and am ready to persist, expose, and export immutable analysis results from PART 1–3 using deterministic storage, CLI parity, and validated IPC schemas only.”**
+
+---
+
+### ✅ What PART 4 Guarantees
+
+* Durable, court-defensible records
+* CLI/UI parity (no hidden logic)
+* Clean separation of analysis and presentation
+* A safe foundation for the desktop UI in PART 5
+
+
+
+---
+
+
+PART 5: DESKTOP DASHBOARD UI & VISUALIZATION (PRESENTATION ONLY)
+
+> **Project Context & Continuity**
+>
+> You are completing a **professional-grade, desktop-only file analysis and forensic inspection application**. The system operates entirely **offline**, never executes or modifies analyzed files, and every visible UI element must be derived from **real, persisted analysis data** produced and stored by PART 1–PART 4.
+>
+> PART 1 (file ingestion & exact semantic file-type resolution), PART 2 (deep, file-type-aware static analysis), PART 3 (rules, correlation & explainable scoring), and PART 4 (persistence, CLI & IPC) are **completed and validated**. Their outputs are **authoritative and immutable**.
+>
+> PART 5 introduces **no analysis, no scoring, and no data mutation**. It is strictly a **presentation layer**.
+
+---
+
+## **CURRENT TASK — PART 5 ONLY: DESKTOP DASHBOARD UI**
+
+You are implementing **PART 5 only**.
+You must consume data **exclusively via validated IPC contracts** defined in PART 4.
+
+**Input:**
+
+* Persisted analysis data retrieved through IPC (read-only)
+
+---
+
+## 🔒 GLOBAL NON-NEGOTIABLE RULES
+
+* **No analysis logic** in the UI layer
+* **No scoring or heuristics** in the UI layer
+* **No direct file parsing** by the UI
+* **No mock, demo, placeholder, or synthesized data**
+* **UI must fail visibly** when data is missing or invalid
+* **All rendered values must exactly match persisted data**
+
+---
+
+## 🧱 UI REQUIREMENTS (MANDATORY)
+
+### 1️⃣ Application Structure (Desktop-Only)
+
+* ElectronJS desktop application (no browser deployment)
+* Top menu bar: **File, View, Analysis, Reports, Settings, Help**
+* Secondary toolbar with context-aware actions
+* Central workspace with **minimum 3 resizable & dockable panels**
+* Bottom status bar showing:
+
+  * Data load state
+  * Errors/warnings
+  * Case/session context
+
+---
+
+### 2️⃣ Data-Driven Dashboards & Views
+
+* **File Overview Panel**
+
+  * Semantic file type (from PART 1)
+  * Container type (if applicable)
+  * Hashes (MD5/SHA-1/SHA-256/SHA-512)
+  * Classification confidence & notes
+* **Risk & Findings Panel**
+
+  * Severity indicators (Informational/Low/Medium/High/Critical)
+  * Confidence values
+  * Rule/heuristic explanations (from PART 3)
+* **Metadata Explorer**
+
+  * Render **only file-type-valid metadata**
+  * Normalized, searchable, filterable fields
+  * Clear indication of `NOT_PRESENT` vs `UNSUPPORTED`
+
+---
+
+### 3️⃣ Inspection Tools (Byte-Accurate)
+
+* **Hex Viewer**
+
+  * Exact byte offsets
+  * Synchronized ASCII view
+  * Jump-to-offset from findings
+* **Strings Viewer**
+
+  * Classified strings (URLs, IPs, emails, paths, commands)
+  * Offset navigation
+* **Archive / Container Tree**
+
+  * Hierarchical structure with offsets
+  * Nested containers (depth-limited)
+* **Diff Views**
+
+  * Binary diff
+  * Metadata diff
+* **Timeline View**
+
+  * Filesystem timestamps
+  * Document/object timelines (as stored)
+
+---
+
+### 4️⃣ Safe Previews (Strictly Sandboxed)
+
+* Render previews **only** for supported formats
+* Disable preview if parser failed upstream
+* Never execute scripts, macros, or active content
+* Preview must reference the same persisted data context
+
+---
+
+### 5️⃣ Usability & Accessibility
+
+* Dark / Light / High-contrast themes
+* Keyboard shortcuts for all major actions
+* Screen-reader compatibility
+* Offline-first behavior (no external calls)
+
+---
+
+## 📡 IPC DATA RULE (CRITICAL)
+
+* UI MUST retrieve all data via IPC defined in PART 4
+* UI MUST validate IPC responses against schemas
+* UI MUST NOT fabricate defaults or inferred values
+* Missing data MUST render explicit error states
+
+---
+
+## 📤 REQUIRED OUTPUTS (MANDATORY)
+
+You MUST provide:
+
+* UI component list and responsibilities
+* IPC endpoints consumed by each component
+* Data-to-UI mapping (which fields render where)
+* Error and empty-state behavior definitions
+
+---
+
+## 🚫 STRICTLY FORBIDDEN
+
+* Static screenshots or mockups
+* Hardcoded sample values
+* UI-only “calculated” fields
+* Reading files directly from disk
+* Reinterpreting or reshaping analysis results
+
+---
+
+## 🧪 VALIDATION RULES
+
+* Reloading the app shows identical results
+* Clicking a finding jumps to the correct byte offset
+* UI values match database values exactly
+* CLI and UI views return the same data
+
+---
+
+## 🛑 FAILURE BEHAVIOR
+
+* IPC errors must surface visibly
+* Schema mismatches must block rendering
+* Silent UI failures are forbidden
+
+---
+
+## BEFORE PROCEEDING
+
+Confirm that:
+
+1. PART 5 is presentation-only
+2. You will not introduce new logic or assumptions
+3. You will not generate mock UI content
+
+End your response with this exact sentence:
+
+> **“I understand PART 5 constraints and will render only real, persisted analysis data via validated IPC into a desktop Electron UI without fabricating, inferring, or simulating any content.”**
+
+---
+
+### ✅ What PART 5 Completes
+
+* A **real** desktop dashboard (not a demo)
+* Full **traceability from UI → evidence → bytes**
+* Strict separation of analysis and presentation
+* A professional, forensic-sound user experience
+
+
+
+
+
