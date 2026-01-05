@@ -183,21 +183,48 @@ class RuleEngine:
                 # Extract matched strings with byte offsets
                 if hasattr(match, 'strings'):
                     for string_match in match.strings:
-                        # YARA 4.x returns (offset, identifier, data) tuples
-                        if isinstance(string_match, tuple) and len(string_match) >= 3:
-                            offset, identifier, data = string_match[0], string_match[1], string_match[2]
-                        else:
-                            # Handle different YARA versions
-                            offset = getattr(string_match, 'offset', 0)
-                            identifier = getattr(string_match, 'identifier', str(string_match))
-                            data = getattr(string_match, 'data', b'')
-                        
-                        detection["matched_strings"].append({
-                            "identifier": str(identifier),
-                            "offset": offset,
-                            "data_hex": data.hex() if isinstance(data, bytes) else str(data),
-                            "data_length": len(data) if isinstance(data, bytes) else 0,
-                        })
+                        # Handle different YARA library versions robustly
+                        try:
+                            # YARA 4.x returns StringMatch objects with instances attribute
+                            if hasattr(string_match, 'instances'):
+                                for instance in string_match.instances:
+                                    offset = getattr(instance, 'offset', 0)
+                                    matched_data = getattr(instance, 'matched_data', b'')
+                                    detection["matched_strings"].append({
+                                        "identifier": str(string_match.identifier),
+                                        "offset": offset,
+                                        "data_hex": matched_data.hex() if isinstance(matched_data, bytes) else str(matched_data),
+                                        "data_length": len(matched_data) if isinstance(matched_data, bytes) else 0,
+                                    })
+                            # Legacy tuple format: (offset, identifier, data)
+                            elif isinstance(string_match, tuple) and len(string_match) >= 3:
+                                offset, identifier, data = string_match[0], string_match[1], string_match[2]
+                                detection["matched_strings"].append({
+                                    "identifier": str(identifier),
+                                    "offset": offset,
+                                    "data_hex": data.hex() if isinstance(data, bytes) else str(data),
+                                    "data_length": len(data) if isinstance(data, bytes) else 0,
+                                })
+                            # Fallback: try to extract using getattr
+                            else:
+                                offset = getattr(string_match, 'offset', 0)
+                                identifier = getattr(string_match, 'identifier', str(string_match))
+                                data = getattr(string_match, 'data', b'')
+                                detection["matched_strings"].append({
+                                    "identifier": str(identifier),
+                                    "offset": offset,
+                                    "data_hex": data.hex() if isinstance(data, bytes) else str(data),
+                                    "data_length": len(data) if isinstance(data, bytes) else 0,
+                                })
+                        except (AttributeError, TypeError, IndexError):
+                            # If all else fails, record what we can
+                            detection["matched_strings"].append({
+                                "identifier": str(string_match),
+                                "offset": 0,
+                                "data_hex": "",
+                                "data_length": 0,
+                                "note": "Could not extract full match details",
+                            })
                 
                 # Set severity from rule meta if available
                 if "severity" in detection["meta"]:

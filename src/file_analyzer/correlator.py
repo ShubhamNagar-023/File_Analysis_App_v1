@@ -14,6 +14,21 @@ All correlations reference concrete evidence IDs.
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
+# Common archive entry names that should be excluded from correlation analysis
+# These files appear in many archives and don't indicate meaningful relationships
+COMMON_ARCHIVE_ENTRIES = frozenset({
+    'readme.txt', 'readme.md', 'readme',
+    'license.txt', 'license.md', 'license',
+    'manifest.xml', 'manifest.mf', 'manifest.json',
+    '[content_types].xml',
+    'meta-inf/manifest.mf',
+    'changelog.txt', 'changelog.md',
+    'authors.txt', 'authors',
+    'notice.txt', 'notice',
+    'copying', 'copying.txt',
+})
+
+
 def generate_correlation_id(correlation_type: str, counter: int) -> str:
     """Generate a unique correlation ID."""
     return f"C{counter:04d}_{correlation_type}"
@@ -496,11 +511,9 @@ class SessionCorrelator:
                         entry_to_files[entry] = []
                     entry_to_files[entry].append(fid)
         
-        # Find shared entries (excluding common names)
-        common_names = {'readme.txt', 'license.txt', 'manifest.xml', '[content_types].xml'}
-        
+        # Find shared entries (excluding common names defined at module level)
         for entry, fids in entry_to_files.items():
-            if len(fids) > 1 and entry.lower() not in common_names:
+            if len(fids) > 1 and entry.lower() not in COMMON_ARCHIVE_ENTRIES:
                 self.correlations.append({
                     "id": self._next_correlation_id("shared_entry"),
                     "type": "correlation",

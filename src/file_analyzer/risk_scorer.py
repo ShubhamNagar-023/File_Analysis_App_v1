@@ -31,6 +31,16 @@ DETECTION_TYPE_WEIGHTS = {
 }
 
 
+# Normalization parameters for the logistic function
+# NORMALIZATION_STEEPNESS controls how quickly scores transition from low to high
+# Lower values = gentler curve, higher values = sharper transition
+NORMALIZATION_STEEPNESS = 0.05
+
+# NORMALIZATION_MIDPOINT is the raw score at which the normalized score is 50
+# This is the "inflection point" of the scoring curve
+NORMALIZATION_MIDPOINT = 50
+
+
 def generate_score_id(counter: int) -> str:
     """Generate a unique score ID."""
     return f"S{counter:04d}_risk_score"
@@ -299,12 +309,10 @@ class RiskScorer:
             return 0.0
         
         # Use logistic function: 100 / (1 + e^(-k*(x-x0)))
-        # where k controls steepness and x0 is the midpoint
-        # Midpoint at 50 raw score, moderate steepness
-        k = 0.05
-        x0 = 50
-        
-        normalized = 100 / (1 + math.exp(-k * (raw_score - x0)))
+        # Parameters are defined as module-level constants for maintainability
+        normalized = 100 / (1 + math.exp(
+            -NORMALIZATION_STEEPNESS * (raw_score - NORMALIZATION_MIDPOINT)
+        ))
         
         # Clamp to 0-100
         return max(0, min(100, normalized))

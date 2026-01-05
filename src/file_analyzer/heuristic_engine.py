@@ -505,9 +505,38 @@ class HeuristicEngine:
             if has_vba:
                 evidence_refs.append("office_ooxml_analysis")
                 trigger_details["has_vba_macros"] = True
-                # Check for auto-exec in relationships (simplified check)
+                
+                # For OOXML, check for auto-exec patterns in external references
+                # or relationships that may indicate auto-execution behavior
+                external_refs = ooxml_data.get("external_references", [])
+                relationships = ooxml_data.get("relationships", [])
+                
+                # Check for auto-execution indicators in OOXML
+                ooxml_auto_exec = []
+                auto_exec_patterns = ['vbaProject', 'AutoOpen', 'AutoExec', 'Document_Open']
+                
+                for ref in external_refs:
+                    for pattern in auto_exec_patterns:
+                        if pattern.lower() in str(ref).lower():
+                            ooxml_auto_exec.append(pattern)
+                
+                for rel in relationships:
+                    targets = rel.get("targets", []) if isinstance(rel, dict) else []
+                    for target in targets:
+                        if 'vba' in str(target).lower():
+                            ooxml_auto_exec.append("VBA reference")
+                
+                # Also use any auto-exec indicators from legacy analysis
                 if trigger_details.get("auto_exec_indicators"):
+                    ooxml_auto_exec.extend(trigger_details["auto_exec_indicators"])
+                
+                if ooxml_auto_exec:
                     triggered = True
+                    trigger_details["auto_exec_indicators"] = list(set(ooxml_auto_exec))
+                elif has_vba:
+                    # VBA presence alone is still noteworthy but with lower confidence
+                    # We'll still trigger but note it's just VBA presence
+                    trigger_details["note"] = "VBA macros detected but no auto-execution indicators found"
         
         if evidence_refs:
             result = self._create_heuristic_result(
