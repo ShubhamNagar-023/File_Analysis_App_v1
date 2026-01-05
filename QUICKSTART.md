@@ -11,19 +11,39 @@ Get started with the File Analysis Application in minutes.
 
 ---
 
-## 🚀 Quick Start (Single Command)
+## 🚀 Quick Start
 
-### Backend Only (Python CLI)
+### Option 1: Integrated Mode (Backend + UI)
 
 ```bash
 # 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Analyze a file
+# 2. Start the application
+python start.py
+```
+
+The integrated launcher will:
+- Check dependencies
+- Install Electron UI (first run only)
+- Start the desktop application
+
+### Option 2: CLI Only
+
+```bash
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Analyze files
 python analyze_file.py test_files/sample.pdf
 ```
 
-That's it! The application will analyze the file and display results.
+### Option 3: Analyze Then View in UI
+
+```bash
+# Analyze a file and open results in UI
+python start.py --analyze suspicious-file.exe
+```
 
 ---
 
