@@ -1,4 +1,3 @@
-
 import json
 import sys
 from src.file_analyzer.analyzer import analyze_file
