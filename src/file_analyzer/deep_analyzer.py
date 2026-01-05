@@ -931,8 +931,9 @@ class DeepAnalyzer:
                     
                     if entropy > 7.2:
                         result['packing_indicators'].append(f"High entropy in {name}: {entropy:.2f}")
-                    if not name or name.startswith('.') is False and len(name) > 0:
-                        if all(c.isalnum() or c in '._' for c in name) is False:
+                    # Check for unusual section names (not starting with . or containing unusual chars)
+                    if name and not name.startswith('.'):
+                        if not all(c.isalnum() or c in '._' for c in name):
                             result['packing_indicators'].append(f"Unusual section name: {repr(name)}")
         except Exception as e:
             result['error'] = str(e)
