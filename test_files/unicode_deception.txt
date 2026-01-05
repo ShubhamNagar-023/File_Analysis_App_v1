@@ -1,0 +1,3 @@
+This file demonstrates Unicode deception.
+Filename could be: invoice‮exe.pdf (appears as invoice.pdf backwards)
+The RLO character (U+202E) reverses text display.
