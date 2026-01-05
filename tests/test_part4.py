@@ -276,8 +276,16 @@ class TestPersistence(unittest.TestCase):
                 'cryptographic_identity': {'hashes': [{'evidence': {'algorithm': 'SHA256'}, 'output_value': f'hash{i}'}]},
                 'semantic_file_type': {'output_value': {'semantic_file_type': 'PLAIN_TEXT'}},
             }
-            part2 = {'universal': [], 'container_level': [], 'file_type_specific': []}
-            part3 = {'risk_score': {'normalized_score': i * 30, 'severity': 'low'}, 'heuristics': {'triggered_heuristics': [], 'failed_heuristics': []}, 'rule_engine': {'yara_detections': []}}
+            part2 = {
+                'universal': [],
+                'container_level': [],
+                'file_type_specific': []
+            }
+            part3 = {
+                'risk_score': {'normalized_score': i * 30, 'severity': 'low'},
+                'heuristics': {'triggered_heuristics': [], 'failed_heuristics': []},
+                'rule_engine': {'yara_detections': []}
+            }
             
             self.db.import_analysis(session_id=session_id, part1_results=part1, part2_results=part2, part3_results=part3)
         

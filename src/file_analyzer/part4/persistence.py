@@ -290,6 +290,49 @@ class AnalysisDatabase:
         computed = compute_checksum(data_json)
         return computed == stored_checksum
     
+    def _build_where_clause(
+        self,
+        conditions: List[Tuple[str, Any]]
+    ) -> Tuple[str, List[Any]]:
+        """
+        Build a WHERE clause safely from conditions.
+        
+        This method ensures SQL injection safety by:
+        1. Only allowing predefined column names
+        2. Using parameterized queries for all values
+        
+        Args:
+            conditions: List of (column_name, value) tuples.
+                       If value is None, the condition is skipped.
+        
+        Returns:
+            Tuple of (where_clause_string, params_list)
+        """
+        # Define allowed column names to prevent SQL injection
+        allowed_columns = frozenset({
+            'case_id', 'session_id', 'record_id', 'status', 'severity',
+            'semantic_file_type', 'finding_type', 'error_type', 'triggered',
+            'heuristic_key', 'rule_id', 'file_type', 'created_at'
+        })
+        
+        where_parts = []
+        params = []
+        
+        for column, value in conditions:
+            if value is None:
+                continue
+            
+            # Validate column name
+            if column not in allowed_columns:
+                raise DatabaseError(f"Invalid column name: {column}")
+            
+            where_parts.append(f"{column} = ?")
+            params.append(value)
+        
+        if where_parts:
+            return "WHERE " + " AND ".join(where_parts), params
+        return "", []
+    
     # ========================================================================
     # CASE OPERATIONS
     # ========================================================================
