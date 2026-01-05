@@ -134,9 +134,45 @@ A professional-grade file analysis and forensic inspection application for secur
 
 ## Installation
 
+### Minimal Installation (Recommended)
+
 ```bash
 pip install -r requirements.txt
 ```
+
+This installs only the core dependencies:
+- `python-magic` (0.4.27+) - Magic byte detection
+- `olefile` (0.46+) - OLE Compound Binary format parsing
+
+**Total:** 2 packages (~1MB), works on all platforms
+
+### Optional Enhancements
+
+For enhanced capabilities, install optional libraries:
+
+```bash
+# YARA rule support
+pip install yara-python
+
+# Fuzzy hashing (similarity analysis)
+pip install ssdeep python-tlsh
+
+# Image metadata extraction
+pip install Pillow piexif
+
+# PDF deep analysis
+pip install pdfminer.six PyPDF2
+
+# Binary analysis (PE/ELF)
+pip install pefile pyelftools
+
+# Office macro analysis
+pip install oletools
+```
+
+**Note:** The application works fully with just the core dependencies. Optional libraries enable additional features but are not required.
+
+See [LIBRARY_RATIONALE.md](LIBRARY_RATIONALE.md) for detailed explanation of library choices.
 
 ## Usage
 
@@ -190,6 +226,44 @@ analyzer = DeepAnalyzer('/path/to/file', part1_results)
 findings = analyzer.analyze()
 ```
 
+### PART 3: Rules, Correlation & Risk Scoring
+
+#### Python API
+
+```python
+from src.file_analyzer.analyzer import analyze_file
+from src.file_analyzer.deep_analyzer import deep_analyze_file
+from src.file_analyzer.part3_analyzer import Part3Analyzer
+
+# Run PART 1 and PART 2 first
+part1_results = analyze_file('/path/to/file')
+part2_results = deep_analyze_file('/path/to/file', part1_results)
+
+# Run PART 3 analysis
+analyzer = Part3Analyzer('/path/to/file', part1_results, part2_results)
+part3_results = analyzer.analyze()
+```
+
+#### Convenience Functions
+
+```python
+from src.file_analyzer.part3_analyzer import analyze_part3, full_analysis
+
+# Analyze with PART 3 only (requires PART 1 & 2 results)
+part3_results = analyze_part3('/path/to/file', part1_results, part2_results)
+
+# Complete analysis (PART 1 + PART 2 + PART 3)
+complete_results = full_analysis('/path/to/file')
+```
+
+#### Features
+
+- **Rule-Based Detection**: YARA rules (optional, graceful fallback)
+- **Fuzzy Hashing**: ssdeep and TLSH similarity (optional)
+- **Heuristic Evaluation**: Deterministic heuristics with evidence
+- **Risk Scoring**: Evidence-based, explainable scoring
+- **Session Correlation**: Multi-file correlation within session
+
 ## Output Format
 
 ### PART 1 Output
@@ -239,31 +313,78 @@ Summary includes:
 - `container_findings` - Count of container-level findings
 - `file_type_specific_findings` - Count of file-type-specific findings
 
+### PART 3 Output
+
+PART 3 produces deterministic, evidence-based detections and scoring:
+
+**Rule Engine:**
+- `yara_detections` - YARA rule matches (if YARA available)
+- `fuzzy_hashes` - ssdeep and TLSH hashes (if libraries available)
+- `library_status` - Availability of optional libraries
+
+**Heuristics:**
+- `triggered_heuristics` - List of triggered heuristics
+- Each heuristic includes:
+  - `heuristic_id` - Unique identifier
+  - `name` - Heuristic name
+  - `description` - What it detects
+  - `trigger_conditions` - What triggered it
+  - `evidence_references` - PART 1/2 evidence IDs
+  - `weight` - Score contribution
+  - `severity` - Risk level (INFORMATIONAL/LOW/MEDIUM/HIGH/CRITICAL)
+
+**Risk Score:**
+- `raw_score` - Unweighted total
+- `normalized_score` - 0-100 scale
+- `severity` - Overall severity classification
+- `confidence` - Confidence in assessment
+- `score_breakdown` - Contribution by category
+- `explanation` - Human-readable explanation
+
+**Summary:**
+- Evidence-based decisions only
+- All scores traceable to specific findings
+- Deterministic and reproducible
+- No threat naming or guessing
+
 ## Running Tests
 
-### Run All Tests
+### Run All Tests (Parts 1, 2, and 3)
 
 ```bash
 pip install pytest
 python -m pytest tests/ -v
 ```
 
-### Run PART 1 Tests Only
+**Expected:** 87 tests passed (42 PART 1 + 19 PART 2 + 26 PART 3)
+
+### Run Tests by Part
 
 ```bash
+# PART 1 Tests (42 tests)
 python -m pytest tests/test_analyzer.py -v
-```
 
-### Run PART 2 Tests Only
-
-```bash
+# PART 2 Tests (19 tests)
 python -m pytest tests/test_deep_analyzer.py -v
+
+# PART 3 Tests (26 tests)
+python -m pytest tests/test_part3_analyzer.py -v
 ```
 
 ### Test Coverage
 
 - **PART 1:** 42 tests covering all file ingestion and type resolution features
 - **PART 2:** 19 tests covering universal, container, and file-type-specific analysis
+- **PART 3:** 26 tests covering rules, heuristics, scoring, and correlation
+- **Total:** 87 tests with 100% pass rate
+
+## Documentation
+
+- **[README.md](README.md)** - Main documentation (this file)
+- **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - Comprehensive testing instructions
+- **[LIBRARY_RATIONALE.md](LIBRARY_RATIONALE.md)** - Library usage and architecture decisions
+- **[CODE_VS_DOC_VERIFICATION.md](CODE_VS_DOC_VERIFICATION.md)** - Implementation verification report
+- **[File_analysis_app_plan](File_analysis_app_plan)** - Original requirements specification
 
 ## License
 
