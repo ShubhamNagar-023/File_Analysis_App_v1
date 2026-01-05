@@ -143,8 +143,9 @@ pip install -r requirements.txt
 This installs only the core dependencies:
 - `python-magic` (0.4.27+) - Magic byte detection
 - `olefile` (0.46+) - OLE Compound Binary format parsing
+- `weasyprint` (60.0+) - **NEW**: PDF generation for export reports
 
-**Total:** 2 packages (~1MB), works on all platforms
+**Total:** 3 packages + dependencies (~15MB), works on all platforms
 
 ### Optional Enhancements
 
@@ -194,8 +195,8 @@ python analyze_file.py /path/to/any/file
 - Auto-detects file type
 - Runs complete PART 1-4 analysis pipeline
 - Displays summary with risk assessment
-- Persists results to temporary database
-- Exports to JSON
+- **⭐ NEW**: Persists results to permanent `exports/` directory
+- **⭐ NEW**: Exports to **JSON, HTML, and PDF** formats automatically
 - Returns exit code based on severity (0=safe, 1=medium, 2=high, 3=error)
 
 **Output includes:**
@@ -203,7 +204,20 @@ python analyze_file.py /path/to/any/file
 - Total findings from deep analysis
 - Risk score and severity
 - Heuristics triggered
+- **⭐ NEW**: Export paths for all three formats (JSON, HTML, PDF)
 - Database persistence confirmation
+
+**Export Directory Structure:**
+```
+exports/
+└── 20260105_193116/
+    ├── analysis.db                    # SQLite database
+    ├── filename_analysis.json         # Complete analysis data
+    ├── filename_analysis.html         # Human-readable report
+    └── filename_analysis.pdf          # Professional PDF report
+```
+
+📚 **See [EXPORT_GUIDE.md](EXPORT_GUIDE.md) for complete export documentation**
 
 ### PART 1: File Ingestion & Type Resolution
 
@@ -557,6 +571,8 @@ python -m pytest tests/test_part4.py -v
 ## Documentation
 
 - **[README.md](README.md)** - Main documentation (this file)
+- **[EXPORT_GUIDE.md](EXPORT_GUIDE.md)** - ⭐ **NEW**: Multi-format export and reporting guide
+- **[PRODUCTION_READINESS.md](PRODUCTION_READINESS.md)** - ⭐ **NEW**: Production deployment guide
 - **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - Comprehensive testing instructions
 - **[LIBRARY_RATIONALE.md](LIBRARY_RATIONALE.md)** - Library usage and architecture decisions
 - **[CODE_VS_DOC_VERIFICATION.md](CODE_VS_DOC_VERIFICATION.md)** - Implementation verification report

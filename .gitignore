@@ -120,3 +120,6 @@ Thumbs.db
 
 # Export directory for analysis reports
 exports/
+
+# Test output directory
+test_output/
