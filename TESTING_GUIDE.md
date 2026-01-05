@@ -1290,6 +1290,104 @@ db.close()
 
 #### 4. Standalone Test Scripts
 
+**Universal Analyzer (Recommended for Any File):**
+
+```bash
+# Analyze any file type with auto-detection
+python analyze_file.py <file_path>
+
+# Examples
+python analyze_file.py test_files/sample.pdf
+python analyze_file.py test_files/sample.docx
+python analyze_file.py test_files/sample.txt
+python analyze_file.py /path/to/any/file
+```
+
+**Expected Output:**
+```
+================================================================================
+UNIVERSAL FILE ANALYZER - COMPLETE ANALYSIS PIPELINE
+================================================================================
+
+Analyzing: test_files/sample.pdf
+File size: 545 bytes
+
+================================================================================
+Running PART 1: File Ingestion & Type Resolution...
+================================================================================
+✅ PART 1 Complete
+   Semantic Type: PDF
+   Container Type: PDF
+
+================================================================================
+Running PART 2: Deep File-Type-Aware Static Analysis...
+================================================================================
+✅ PART 2 Complete
+   Total Findings: 8
+   Universal: 4
+   Container: 0
+   File-Type Specific: 4
+
+================================================================================
+Running PART 3: Rules, Correlation & Explainable Risk Scoring...
+================================================================================
+✅ PART 3 Complete
+   Risk Score: 0.0/100
+   Severity: INFORMATIONAL
+   Heuristics Triggered: 0
+
+================================================================================
+Running PART 4: Persistence, CLI & IPC...
+================================================================================
+✅ Analysis persisted to database
+   Case ID: CASE-ABCD1234
+   Session ID: SES-12345678
+   Record ID: REC-ABC123DEF456
+
+✅ Analysis retrieved successfully
+   File: /path/to/file
+   Created At: 2026-01-05T19:15:00
+   Data integrity verified: ✓
+
+✅ Analysis exported to JSON
+   Export path: /tmp/tmpxyz/sample_analysis.json
+   Export size: 32690 bytes
+
+✅ Session query successful
+   Records in session: 1
+
+✅ Database closed cleanly
+
+================================================================================
+ANALYSIS COMPLETE - ALL FOUR PARTS
+================================================================================
+
+📄 File Information:
+   Path: test_files/sample.pdf
+   Name: sample.pdf
+   Size: 545 bytes
+
+🔍 Analysis Results:
+   Semantic Type: PDF
+   Container Type: PDF
+   Total Findings: 8
+
+⚠️  Risk Assessment:
+   Risk Score: 0.0/100
+   Severity: INFORMATIONAL
+   Heuristics Triggered: 0
+
+💾 Persistence:
+   Database Operations: 5/5 completed
+   Export Operations: 1/1 completed
+   Data Integrity: ✅ Verified
+
+⚪ Overall Status: INFORMATIONAL
+================================================================================
+```
+
+**File-Type Specific Test Scripts (Detailed JSON Output):**
+
 Run the standalone test scripts for different file types:
 
 ```bash
@@ -1313,9 +1411,10 @@ Each script will:
 - Retrieve and verify data
 - Export to JSON
 - Query session records
+- Display detailed JSON output for each part
 - Display summary
 
-**Expected Output:**
+**Expected Output from File-Specific Scripts:**
 ```
 ================================================================================
 ANALYSIS COMPLETE - ALL FOUR PARTS

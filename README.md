@@ -176,6 +176,35 @@ See [LIBRARY_RATIONALE.md](LIBRARY_RATIONALE.md) for detailed explanation of lib
 
 ## Usage
 
+### Quick Start: Universal Analyzer
+
+For quick analysis of any file type, use the universal analyzer script:
+
+```bash
+# Analyze any file with complete PART 1-4 pipeline
+python analyze_file.py <file_path>
+
+# Examples
+python analyze_file.py test_files/sample.pdf
+python analyze_file.py test_files/sample.docx
+python analyze_file.py /path/to/any/file
+```
+
+**Features:**
+- Auto-detects file type
+- Runs complete PART 1-4 analysis pipeline
+- Displays summary with risk assessment
+- Persists results to temporary database
+- Exports to JSON
+- Returns exit code based on severity (0=safe, 1=medium, 2=high, 3=error)
+
+**Output includes:**
+- File type and container information
+- Total findings from deep analysis
+- Risk score and severity
+- Heuristics triggered
+- Database persistence confirmation
+
 ### PART 1: File Ingestion & Type Resolution
 
 #### Command Line
@@ -322,13 +351,27 @@ db.close()
 
 #### Convenience Test Scripts
 
+**Universal Analyzer (recommended):**
 ```bash
-# Test with different file types (runs all 4 parts)
+# Analyze any file type with auto-detection
+python analyze_file.py <file_path>
+
+# Examples
+python analyze_file.py test_files/sample.pdf
+python analyze_file.py /path/to/document.docx
+python analyze_file.py /home/user/photo.jpg
+```
+
+**File-Type Specific Scripts:**
+```bash
+# Test specific file types (runs all 4 parts with detailed output)
 python text_test.py test_files/sample.txt
 python docx_test.py test_files/sample.docx
 python pdf_test.py test_files/sample.pdf
 python image_test.py test_files/sample.jpg
 ```
+
+The universal `analyze_file.py` script provides a clean, production-ready interface while the file-type specific scripts show detailed JSON output for each part.
 
 #### Features
 
