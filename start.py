@@ -63,8 +63,20 @@ def start_gui():
     print("Press Ctrl+C in this terminal to stop.\n")
     
     try:
+        # Check if app.py exists
+        if not Path('app.py').exists():
+            print("Error: app.py not found")
+            print("Please ensure you're running from the repository root directory")
+            return False
+        
         result = subprocess.run([sys.executable, 'app.py'])
         return result.returncode == 0
+    except FileNotFoundError:
+        print("Error: Python interpreter not found")
+        return False
+    except subprocess.CalledProcessError as e:
+        print(f"Error launching GUI: {e}")
+        return False
     except KeyboardInterrupt:
         print("\n\nShutting down...")
         return True
@@ -100,7 +112,8 @@ def start_api_server(port=5000):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="File Analysis Application - Security and Forensic File Analysis"
+        description="File Analysis Application",
+        epilog="Production-Grade File Security and Forensic Analysis Tool"
     )
     parser.add_argument('--cli', action='store_true', 
                        help='CLI mode only (no GUI)')
