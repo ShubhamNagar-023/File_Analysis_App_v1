@@ -1,20 +1,26 @@
 # File Analysis Application
 
-**Production-Grade Desktop Application** for security analysis, malware triage, digital forensics, and file integrity verification.
+**Production-Grade File Security Analysis Tool** for malware triage, digital forensics, and file integrity verification.
 
 ## Quick Start
 
 ```bash
-# 1. Install
+# 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Launch GUI Application
+# 2. Launch application (automatically selects GUI or CLI)
+python start.py
+
+# Or launch GUI directly
 python app.py
+
+# Or use CLI mode
+python start.py --cli
 ```
 
 ## For Law Enforcement, SOC Teams & Enterprises
 
-This is a **production-ready desktop application** designed for:
+This is a **production-ready application** designed for:
 
 - ✅ Law Enforcement Agencies - Digital evidence analysis
 - ✅ Security Operations Centers (SOC) - Malware triage and threat analysis  
@@ -24,15 +30,15 @@ This is a **production-ready desktop application** designed for:
 
 ## Features
 
-### Desktop GUI Application
+### Desktop GUI Application (PyQt6)
 
-- **Drag & Drop File Analysis** - Easy file selection and analysis
+- **File Selection** - Easy file browser for analysis
 - **Real-Time Progress** - Live updates during analysis
 - **Visual Risk Assessment** - Color-coded severity indicators
 - **Analysis History** - Complete record of all analyzed files
 - **Multi-Format Export** - JSON, HTML, and PDF reports
 - **Case Management** - Organize analyses by cases and sessions
-- **Professional Interface** - Production-ready UI with menus and toolbars
+- **Professional Interface** - Native desktop UI with menus and toolbars
 
 ### Analysis Capabilities
 
@@ -62,37 +68,53 @@ pip install -r requirements.txt
 **Core dependencies:**
 - `python-magic` - File type detection
 - `olefile` - OLE format parsing
-- `PyQt6` - Desktop GUI framework
-- `Flask` - REST API (for API mode)
+- `PyQt6` - Desktop GUI framework (optional, for GUI mode)
+- `Flask` - REST API server (optional, for API mode)
 
 ## Usage
 
-### Production GUI (Recommended)
+### Option 1: Integrated Launcher (Recommended)
+
+```bash
+# Automatically starts GUI (if PyQt6 installed) or CLI mode
+python start.py
+
+# Analyze a file then view in GUI
+python start.py --analyze suspicious.exe
+
+# Force CLI mode
+python start.py --cli
+
+# Start API server
+python start.py --api --port 5000
+```
+
+### Option 2: Direct GUI Launch
 
 ```bash
 python app.py
 ```
 
 **Features:**
-1. Click "Select File" or drag & drop
+1. Click "Select File" button
 2. Click "Analyze" button
 3. View results in real-time
 4. Export to JSON/HTML/PDF
 5. Browse analysis history
 
-### API Server (For Integration)
+### Option 3: API Server (For Integration)
 
 ```bash
 # Start REST API server
 python api_server.py
 
-# Custom port
-python api_server.py --port 8080
+# Or via start.py
+python start.py --api --port 8080
 ```
 
 See [API.md](API.md) for complete API documentation.
 
-### Command Line (For Automation)
+### Option 4: Command Line (For Automation)
 
 ```bash
 # Analyze individual files
@@ -133,19 +155,26 @@ See [TESTING.md](TESTING.md) for details.
 
 ## Documentation
 
-- **[QUICKSTART.md](QUICKSTART.md)** - Detailed setup guide
+- **[QUICKSTART.md](QUICKSTART.md)** - Detailed setup and usage guide
 - **[API.md](API.md)** - REST API documentation
 - **[TESTING.md](TESTING.md)** - Testing instructions
-- **[docs/](docs/)** - Technical documentation
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture overview
 
 ## Architecture
 
-1. **GUI Layer** (PyQt6) - Production desktop interface
-2. **PART 1** - File Ingestion & Type Resolution
-3. **PART 2** - Deep Static Analysis  
-4. **PART 3** - Risk Scoring & Heuristics
-5. **PART 4** - Persistence & Export
-6. **API Layer** (Flask) - REST API for integration
+The application consists of four main analysis parts plus presentation layers:
+
+1. **PART 1** - File Ingestion & Type Resolution
+2. **PART 2** - Deep Static Analysis  
+3. **PART 3** - Risk Scoring & Heuristics
+4. **PART 4** - Persistence & Export
+
+**Presentation Layers:**
+- **GUI** (PyQt6) - Native desktop interface
+- **CLI** (analyze_file.py) - Command-line interface
+- **API** (Flask) - REST API for integration
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for details.
 
 ## Production Deployment
 
@@ -155,8 +184,8 @@ See [TESTING.md](TESTING.md) for details.
 # Install for users
 pip install -r requirements.txt
 
-# Create desktop shortcut
-python app.py
+# Launch application
+python start.py
 ```
 
 ### API Server Deployment
@@ -164,13 +193,9 @@ python app.py
 ```bash
 # Run as service
 python api_server.py --host 0.0.0.0 --port 8080
-```
 
-### Docker Deployment
-
-```bash
-docker build -t file-analysis .
-docker run -p 5000:5000 file-analysis
+# Or via start.py
+python start.py --api --port 8080
 ```
 
 ## Security & Privacy
@@ -193,8 +218,9 @@ docker run -p 5000:5000 file-analysis
 
 For issues or questions:
 - Check [QUICKSTART.md](QUICKSTART.md) for setup help
-- Review [API.md](API.md) for integration
-- See [docs/](docs/) for technical details
+- Review [API.md](API.md) for API integration
+- See [TESTING.md](TESTING.md) for testing
+- Review [ARCHITECTURE.md](ARCHITECTURE.md) for technical details
 
 ## License
 
