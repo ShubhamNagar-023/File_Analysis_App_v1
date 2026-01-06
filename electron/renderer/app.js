@@ -2,17 +2,20 @@
  * PART 5: Main Application Script
  * 
  * Orchestrates the desktop dashboard UI, managing:
- * - IPC communication with Python backend (via preload bridge)
+ * - API communication with Flask backend
  * - Component initialization and updates
  * - State management
  * - Theme switching
  * - Keyboard shortcuts
  * 
  * CONSTRAINTS:
- * - All data via IPC - no fabrication
+ * - All data via REST API - no fabrication
  * - Errors must be visible - no silent failures
  * - Presentation only - no analysis logic
  */
+
+// API Client instance
+let apiClient = null;
 
 // Application state
 const AppState = {
@@ -25,7 +28,8 @@ const AppState = {
     theme: 'dark',
     databasePath: null,
     isLoading: false,
-    schemaVersion: '1.0.0'
+    schemaVersion: '1.0.0',
+    backendConnected: false
 };
 
 // Component instances
@@ -47,6 +51,9 @@ let statusBar = null;
 async function initializeApp() {
     console.log('PART 5: Initializing Desktop Dashboard...');
     
+    // Initialize API client
+    apiClient = new APIClient('http://localhost:5000');
+    
     // Initialize components
     initializeComponents();
     
@@ -62,6 +69,9 @@ async function initializeApp() {
     // Update initial state
     statusBar.setLoadState('idle', 'Ready');
     statusBar.setSchemaVersion(AppState.schemaVersion);
+    
+    // Check backend connection
+    await checkBackendConnection();
     
     console.log('PART 5: Dashboard initialized');
 }
@@ -246,7 +256,7 @@ async function handleMenuAction(action) {
 }
 
 /**
- * Refresh all data from IPC
+ * Refresh all data from API
  */
 async function refreshData() {
     if (AppState.isLoading) return;
@@ -259,8 +269,8 @@ async function refreshData() {
         await loadCases();
 
         // Refresh records if session selected
-        if (AppState.currentSession) {
-            await loadRecords(AppState.currentSession);
+        if (AppState.currentSession && AppState.currentSession.session_id) {
+            await loadRecords(AppState.currentSession.session_id);
         }
 
         // Refresh current record
@@ -277,17 +287,22 @@ async function refreshData() {
 }
 
 /**
- * Load cases from IPC
+ * Load cases from API
  */
 async function loadCases() {
     try {
-        // IPC call would go here
-        // const cases = await ipcBridge.listCases();
+        const cases = await apiClient.listCases();
         
-        // For now, update UI to show no cases
+        // Update UI with cases
         const selector = document.getElementById('case-selector');
         if (selector) {
             selector.innerHTML = '<option value="">-- Select Case --</option>';
+            cases.forEach(caseItem => {
+                const option = document.createElement('option');
+                option.value = caseItem.case_id;
+                option.textContent = `${caseItem.name} (${caseItem.case_id})`;
+                selector.appendChild(option);
+            });
         }
     } catch (error) {
         handleError('Failed to load cases', error);
@@ -297,13 +312,16 @@ async function loadCases() {
 /**
  * Load records for a session
  */
-async function loadRecords(sessionId) {
+async function loadRecords(sessionId = null) {
     try {
-        // IPC call would go here
-        // const records = await ipcBridge.listRecords({ session_id: sessionId });
+        // Fetch records filtered by session (if provided)
+        const params = sessionId ? { session_id: sessionId } : {};
+        const records = await apiClient.listRecords(params);
+        
+        AppState.records = records;
         
         // Update records list
-        renderRecordsList([]);
+        renderRecordsList(records);
     } catch (error) {
         handleError('Failed to load records', error);
     }
@@ -316,13 +334,14 @@ async function loadRecord(recordId) {
     setLoading(true, 'Loading record...');
 
     try {
-        // IPC call would go here
-        // const record = await ipcBridge.getRecord(recordId);
-        // const findings = await ipcBridge.listFindings({ record_id: recordId });
-        // const heuristics = await ipcBridge.listHeuristics({ record_id: recordId });
-
-        // For now, use mock data structure
-        // In production, this would come from IPC
+        // Fetch record from API
+        const record = await apiClient.getRecord(recordId);
+        
+        AppState.currentRecord = record;
+        
+        // Extract findings and heuristics from record structure
+        AppState.findings = extractFindings(record);
+        AppState.heuristics = extractHeuristics(record);
 
         // Update all components with record data
         if (AppState.currentRecord) {
@@ -354,21 +373,33 @@ async function handleCaseChange(event) {
     if (!caseId) {
         AppState.currentCase = null;
         statusBar.setCaseContext(null);
+        
+        // Clear session selector
+        const sessionSelector = document.getElementById('session-selector');
+        if (sessionSelector) {
+            sessionSelector.innerHTML = '<option value="">-- Select Session --</option>';
+        }
         return;
     }
 
     try {
-        // Load case details and sessions
-        // const case = await ipcBridge.getCase(caseId);
-        // const sessions = await ipcBridge.listSessions({ case_id: caseId });
+        // Load case details and sessions via API
+        const caseData = await apiClient.getCase(caseId);
+        const sessions = await apiClient.listSessions(caseId);
         
-        AppState.currentCase = { case_id: caseId };
-        statusBar.setCaseContext(caseId, caseId);
+        AppState.currentCase = caseData;
+        statusBar.setCaseContext(caseId, caseData.name || caseId);
 
-        // Update session selector
+        // Update session selector with sessions from this case
         const sessionSelector = document.getElementById('session-selector');
         if (sessionSelector) {
             sessionSelector.innerHTML = '<option value="">-- Select Session --</option>';
+            sessions.forEach(session => {
+                const option = document.createElement('option');
+                option.value = session.session_id;
+                option.textContent = `${session.name} (${session.session_id})`;
+                sessionSelector.appendChild(option);
+            });
         }
     } catch (error) {
         handleError('Failed to load case', error);
@@ -389,8 +420,11 @@ async function handleSessionChange(event) {
     }
 
     try {
-        AppState.currentSession = { session_id: sessionId };
-        statusBar.setSessionContext(sessionId, sessionId);
+        // Load session details via API
+        const sessionData = await apiClient.getSession(sessionId);
+        
+        AppState.currentSession = sessionData;
+        statusBar.setSessionContext(sessionId, sessionData.name || sessionId);
 
         // Load records for session
         await loadRecords(sessionId);
@@ -480,10 +514,10 @@ async function handleDatabaseSelected(dbPath) {
     statusBar.setLoadState('loading', 'Connecting to database...');
 
     try {
-        // Initialize IPC with database
-        // await ipcBridge.initialize(dbPath);
-        
+        // Database is handled by the backend API server
+        // Just reload the data
         await loadCases();
+        await loadRecords();
         statusBar.setLoadState('ready', 'Connected');
     } catch (error) {
         handleError('Database connection failed', error);
@@ -492,28 +526,44 @@ async function handleDatabaseSelected(dbPath) {
 
 /**
  * Handle analyze file request
+ * Note: This function receives a file path from the main process file dialog.
+ * In a sandboxed renderer, we can't directly read files from disk.
+ * The main process should send the file buffer via IPC, or we use a file input.
  */
 async function handleAnalyzeFile(filePath) {
-    if (!AppState.currentSession) {
-        showError('No Session', 'Please select a session before analyzing files.');
-        return;
-    }
-
-    setLoading(true, 'Analyzing file...');
-
-    try {
-        // Would call analysis via IPC
-        // const result = await ipcBridge.analyzeFile(filePath, AppState.currentSession.session_id);
+    // For now, show a file input dialog as a workaround
+    // TODO: Implement proper IPC file transfer from main process
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
         
-        // Refresh records
-        await loadRecords(AppState.currentSession.session_id);
+        setLoading(true, 'Analyzing file...');
         
-        statusBar.setLoadState('ready', 'Analysis complete');
-    } catch (error) {
-        handleError('Analysis failed', error);
-    } finally {
-        setLoading(false);
-    }
+        try {
+            // Analyze via API
+            const caseName = AppState.currentCase?.name || `Case_${new Date().toISOString().split('T')[0]}`;
+            const sessionName = AppState.currentSession?.name || `Session_${file.name}`;
+            
+            const result = await apiClient.analyzeFile(file, caseName, sessionName);
+            
+            // Refresh data to show new analysis
+            await refreshData();
+            
+            // Load the newly created record
+            if (result.record_id) {
+                await loadRecord(result.record_id);
+            }
+            
+            statusBar.setLoadState('ready', 'Analysis complete');
+        } catch (error) {
+            handleError('Analysis failed', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    input.click();
 }
 
 /**
@@ -538,8 +588,17 @@ async function handleExport(action) {
 
         if (result.canceled) return;
 
-        // Would call export via IPC
-        // await ipcBridge.exportRecord(AppState.currentRecord.record_id, result.filePath, format);
+        // Export via API
+        const blob = await apiClient.exportRecord(AppState.currentRecord.record_id, format);
+        
+        // Save blob to file (would need file system access in Electron)
+        // For now, trigger download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${AppState.currentRecord.file_name}_report.${format}`;
+        a.click();
+        URL.revokeObjectURL(url);
         
         statusBar.setLoadState('ready', 'Export complete');
     } catch (error) {
@@ -552,11 +611,23 @@ async function handleExport(action) {
  */
 async function showStatistics() {
     try {
-        // Would call statistics via IPC
-        // const stats = await ipcBridge.getStatistics();
+        const stats = await apiClient.getStats();
         
-        // For now, show placeholder
-        console.log('Statistics would be displayed here');
+        // Display statistics in a simple alert (could be enhanced with a modal)
+        const message = `
+Total Cases: ${stats.total_cases || 0}
+Total Sessions: ${stats.total_sessions || 0}
+Total Records: ${stats.total_records || 0}
+
+Severity Distribution:
+- Critical: ${stats.severity_distribution?.CRITICAL || 0}
+- High: ${stats.severity_distribution?.HIGH || 0}
+- Medium: ${stats.severity_distribution?.MEDIUM || 0}
+- Low: ${stats.severity_distribution?.LOW || 0}
+- Informational: ${stats.severity_distribution?.INFORMATIONAL || 0}
+        `;
+        
+        showError('Statistics', message);
     } catch (error) {
         handleError('Failed to load statistics', error);
     }
@@ -650,6 +721,88 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = String(text);
     return div.innerHTML;
+}
+
+/**
+ * Check backend connection
+ */
+async function checkBackendConnection() {
+    try {
+        const health = await apiClient.checkHealth();
+        AppState.backendConnected = health && health.status === 'healthy';
+        updateBackendStatus();
+        
+        if (AppState.backendConnected) {
+            // Load initial data
+            await loadCases();
+            await loadRecords();
+        }
+    } catch (error) {
+        AppState.backendConnected = false;
+        updateBackendStatus();
+        console.warn('Backend not connected:', error.message);
+    }
+}
+
+/**
+ * Update backend status indicator
+ */
+function updateBackendStatus() {
+    const indicator = document.getElementById('backend-status');
+    if (indicator) {
+        if (AppState.backendConnected) {
+            indicator.textContent = '● Connected';
+            indicator.className = 'status-indicator connected';
+            indicator.style.color = '#4CAF50';
+        } else {
+            indicator.textContent = '● Disconnected';
+            indicator.className = 'status-indicator disconnected';
+            indicator.style.color = '#f44336';
+        }
+    }
+}
+
+/**
+ * Extract findings from record structure
+ */
+function extractFindings(record) {
+    const findings = [];
+    
+    // Extract from part2 if available
+    if (record.part2 && record.part2.findings) {
+        findings.push(...record.part2.findings);
+    }
+    
+    // Extract from strings if available
+    if (record.part2 && record.part2.strings && record.part2.strings.extracted_strings) {
+        const strings = record.part2.strings.extracted_strings;
+        strings.forEach((str, idx) => {
+            findings.push({
+                finding_id: `string-${idx}`,
+                type: 'STRING',
+                description: str.value || str,
+                offset: str.offset || 0,
+                offset_end: (str.offset || 0) + (str.value ? str.value.length : String(str).length),
+                severity: 'INFORMATIONAL'
+            });
+        });
+    }
+    
+    return findings;
+}
+
+/**
+ * Extract heuristics from record structure
+ */
+function extractHeuristics(record) {
+    const heuristics = [];
+    
+    // Extract from part3 if available
+    if (record.part3 && record.part3.heuristics && Array.isArray(record.part3.heuristics)) {
+        heuristics.push(...record.part3.heuristics);
+    }
+    
+    return heuristics;
 }
 
 // Initialize app when DOM is ready

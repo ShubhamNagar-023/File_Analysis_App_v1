@@ -32,8 +32,23 @@ class APIClient {
         return response.json();
     }
 
-    async listRecords() {
-        const response = await fetch(`${this.baseURL}/api/records`);
+    async listRecords(params = {}) {
+        let url = `${this.baseURL}/api/records`;
+        const queryParams = new URLSearchParams();
+        
+        if (params.session_id) queryParams.append('session_id', params.session_id);
+        if (params.file_type) queryParams.append('file_type', params.file_type);
+        if (params.severity) queryParams.append('severity', params.severity);
+        if (params.min_score !== undefined) queryParams.append('min_score', params.min_score);
+        if (params.max_score !== undefined) queryParams.append('max_score', params.max_score);
+        if (params.limit) queryParams.append('limit', params.limit);
+        if (params.offset) queryParams.append('offset', params.offset);
+        
+        if (queryParams.toString()) {
+            url += '?' + queryParams.toString();
+        }
+        
+        const response = await fetch(url);
         const data = await response.json();
         return data.records || [];
     }
@@ -54,6 +69,28 @@ class APIClient {
         const response = await fetch(`${this.baseURL}/api/cases`);
         const data = await response.json();
         return data.cases || [];
+    }
+
+    async getCase(caseId) {
+        const response = await fetch(`${this.baseURL}/api/cases/${caseId}`);
+        const data = await response.json();
+        return data.case;
+    }
+
+    async listSessions(caseId = null) {
+        let url = `${this.baseURL}/api/sessions`;
+        if (caseId) {
+            url += `?case_id=${encodeURIComponent(caseId)}`;
+        }
+        const response = await fetch(url);
+        const data = await response.json();
+        return data.sessions || [];
+    }
+
+    async getSession(sessionId) {
+        const response = await fetch(`${this.baseURL}/api/sessions/${sessionId}`);
+        const data = await response.json();
+        return data.session;
     }
 
     async getStats() {

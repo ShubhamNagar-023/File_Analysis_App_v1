@@ -83,7 +83,19 @@ session_name: "Analysis Session" (optional)
 
 ```http
 GET /api/records
+GET /api/records?session_id={session_id}
+GET /api/records?file_type={type}&severity={severity}
+GET /api/records?min_score={score}&max_score={score}
 ```
+
+**Query Parameters:**
+- `session_id` - Filter by session
+- `file_type` - Filter by file type
+- `severity` - Filter by severity (informational, low, medium, high, critical)
+- `min_score` - Minimum risk score (0-100)
+- `max_score` - Maximum risk score (0-100)
+- `limit` - Max results (default: 100)
+- `offset` - Pagination offset (default: 0)
 
 **Response:**
 ```json
@@ -150,6 +162,73 @@ GET /api/cases
       "created_at": "2026-01-05T21:00:00"
     }
   ]
+}
+```
+
+### Get Specific Case
+
+```http
+GET /api/cases/{case_id}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "case": {
+    "case_id": "CASE-123...",
+    "name": "Investigation XYZ",
+    "description": "...",
+    "status": "open",
+    "created_at": "2026-01-05T21:00:00",
+    "updated_at": "2026-01-05T22:00:00"
+  }
+}
+```
+
+### List Sessions
+
+```http
+GET /api/sessions
+GET /api/sessions?case_id={case_id}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 3,
+  "sessions": [
+    {
+      "session_id": "SES-456...",
+      "case_id": "CASE-123...",
+      "name": "Analysis Session 1",
+      "status": "active",
+      "created_at": "2026-01-05T21:00:00"
+    }
+  ]
+}
+```
+
+### Get Specific Session
+
+```http
+GET /api/sessions/{session_id}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "session": {
+    "session_id": "SES-456...",
+    "case_id": "CASE-123...",
+    "name": "Analysis Session 1",
+    "description": "...",
+    "status": "active",
+    "created_at": "2026-01-05T21:00:00",
+    "updated_at": "2026-01-05T22:00:00"
+  }
 }
 ```
 
