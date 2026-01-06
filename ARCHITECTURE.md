@@ -11,7 +11,7 @@
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐        │
-│  │  Electron GUI   │  │  Command Line   │  │   REST API      │        │
+│  │   PyQt6 GUI     │  │  Command Line   │  │   REST API      │        │
 │  │   (Desktop)     │  │     (CLI)       │  │  (Integration)  │        │
 │  │                 │  │                 │  │                 │        │
 │  │ • Case selector │  │ • analyze_file  │  │ • HTTP Client   │        │
@@ -25,21 +25,10 @@
             └────────────────────┴─────────────────────┘
                                  │
                     ┌────────────▼────────────┐
-                    │     API CLIENT          │
-                    │  (api-client.js)        │
-                    │                         │
-                    │ • checkHealth()         │
-                    │ • analyzeFile()         │
-                    │ • listCases()           │
-                    │ • listSessions()        │
-                    │ • listRecords()         │
-                    │ • getRecord()           │
-                    │ • exportRecord()        │
-                    └────────────┬────────────┘
-                                 │
-                    ┌────────────▼────────────┐
-                    │   HTTP/REST/JSON        │
-                    │   localhost:5000        │
+                    │   DIRECT INTEGRATION    │
+                    │  (PyQt6: Direct calls)  │
+                    │  (CLI: analyze_file.py) │
+                    │  (API: HTTP/REST/JSON)  │
                     └────────────┬────────────┘
                                  │
 ┌────────────────────────────────▼─────────────────────────────────────────┐
