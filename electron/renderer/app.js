@@ -256,7 +256,7 @@ async function handleMenuAction(action) {
 }
 
 /**
- * Refresh all data from IPC
+ * Refresh all data from API
  */
 async function refreshData() {
     if (AppState.isLoading) return;
@@ -269,8 +269,8 @@ async function refreshData() {
         await loadCases();
 
         // Refresh records if session selected
-        if (AppState.currentSession) {
-            await loadRecords(AppState.currentSession);
+        if (AppState.currentSession && AppState.currentSession.session_id) {
+            await loadRecords(AppState.currentSession.session_id);
         }
 
         // Refresh current record
@@ -312,10 +312,11 @@ async function loadCases() {
 /**
  * Load records for a session
  */
-async function loadRecords(sessionId) {
+async function loadRecords(sessionId = null) {
     try {
-        // Fetch records filtered by session
-        const records = await apiClient.listRecords({ session_id: sessionId });
+        // Fetch records filtered by session (if provided)
+        const params = sessionId ? { session_id: sessionId } : {};
+        const records = await apiClient.listRecords(params);
         
         AppState.records = records;
         
@@ -525,36 +526,44 @@ async function handleDatabaseSelected(dbPath) {
 
 /**
  * Handle analyze file request
+ * Note: This function receives a file path from the main process file dialog.
+ * In a sandboxed renderer, we can't directly read files from disk.
+ * The main process should send the file buffer via IPC, or we use a file input.
  */
 async function handleAnalyzeFile(filePath) {
-    setLoading(true, 'Analyzing file...');
-
-    try {
-        // Read file from path (this is a desktop app, so we have file system access)
-        const response = await fetch('file://' + filePath);
-        const blob = await response.blob();
-        const file = new File([blob], filePath.split('/').pop() || filePath.split('\\').pop());
+    // For now, show a file input dialog as a workaround
+    // TODO: Implement proper IPC file transfer from main process
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
         
-        // Analyze via API
-        const caseName = AppState.currentCase?.name || `Case_${new Date().toISOString().split('T')[0]}`;
-        const sessionName = AppState.currentSession?.name || `Session_${file.name}`;
+        setLoading(true, 'Analyzing file...');
         
-        const result = await apiClient.analyzeFile(file, caseName, sessionName);
-        
-        // Refresh data to show new analysis
-        await refreshData();
-        
-        // Load the newly created record
-        if (result.record_id) {
-            await loadRecord(result.record_id);
+        try {
+            // Analyze via API
+            const caseName = AppState.currentCase?.name || `Case_${new Date().toISOString().split('T')[0]}`;
+            const sessionName = AppState.currentSession?.name || `Session_${file.name}`;
+            
+            const result = await apiClient.analyzeFile(file, caseName, sessionName);
+            
+            // Refresh data to show new analysis
+            await refreshData();
+            
+            // Load the newly created record
+            if (result.record_id) {
+                await loadRecord(result.record_id);
+            }
+            
+            statusBar.setLoadState('ready', 'Analysis complete');
+        } catch (error) {
+            handleError('Analysis failed', error);
+        } finally {
+            setLoading(false);
         }
-        
-        statusBar.setLoadState('ready', 'Analysis complete');
-    } catch (error) {
-        handleError('Analysis failed', error);
-    } finally {
-        setLoading(false);
-    }
+    };
+    input.click();
 }
 
 /**
