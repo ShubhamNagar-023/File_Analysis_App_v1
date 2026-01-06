@@ -168,9 +168,26 @@ def analyze():
 
 @app.route('/api/records', methods=['GET'])
 def list_records():
-    """List all analysis records"""
+    """List all analysis records with optional filtering"""
     try:
-        records = db.query_records()
+        # Get query parameters
+        session_id = request.args.get('session_id')
+        file_type = request.args.get('file_type')
+        severity = request.args.get('severity')
+        min_score = request.args.get('min_score', type=float)
+        max_score = request.args.get('max_score', type=float)
+        limit = request.args.get('limit', type=int, default=100)
+        offset = request.args.get('offset', type=int, default=0)
+        
+        records = db.query_records(
+            session_id=session_id,
+            file_type=file_type,
+            severity=severity,
+            min_score=min_score,
+            max_score=max_score,
+            limit=limit,
+            offset=offset
+        )
         return jsonify({
             'success': True,
             'count': len(records),
@@ -248,6 +265,48 @@ def list_cases():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/cases/<case_id>', methods=['GET'])
+def get_case(case_id):
+    """Get a specific case"""
+    try:
+        case = db.get_case(case_id)
+        if case is None:
+            return jsonify({'error': 'Case not found'}), 404
+        return jsonify({
+            'success': True,
+            'case': case
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/sessions', methods=['GET'])
+def list_sessions():
+    """List all sessions, optionally filtered by case_id"""
+    try:
+        case_id = request.args.get('case_id')
+        sessions = db.list_sessions(case_id=case_id)
+        return jsonify({
+            'success': True,
+            'count': len(sessions),
+            'sessions': sessions
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/sessions/<session_id>', methods=['GET'])
+def get_session(session_id):
+    """Get a specific session"""
+    try:
+        session = db.get_session(session_id)
+        if session is None:
+            return jsonify({'error': 'Session not found'}), 404
+        return jsonify({
+            'success': True,
+            'session': session
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
     """Get database statistics"""
@@ -273,13 +332,17 @@ def main():
     print("="*70)
     print(f"\nStarting server on http://{args.host}:{args.port}")
     print("\nAPI Endpoints:")
-    print(f"  GET  /api/health              - Health check")
-    print(f"  POST /api/analyze             - Analyze file (upload)")
-    print(f"  GET  /api/records             - List all records")
-    print(f"  GET  /api/records/<id>        - Get specific record")
-    print(f"  GET  /api/records/<id>/export/<format> - Export record")
-    print(f"  GET  /api/cases               - List all cases")
-    print(f"  GET  /api/stats               - Get statistics")
+    print(f"  GET  /api/health                       - Health check")
+    print(f"  POST /api/analyze                      - Analyze file (upload)")
+    print(f"  GET  /api/records                      - List all records")
+    print(f"  GET  /api/records/<id>                 - Get specific record")
+    print(f"  GET  /api/records/<id>/export/<format> - Export record (json/html/pdf)")
+    print(f"  GET  /api/cases                        - List all cases")
+    print(f"  GET  /api/cases/<id>                   - Get specific case")
+    print(f"  GET  /api/sessions                     - List all sessions")
+    print(f"  GET  /api/sessions?case_id=<id>        - List sessions for a case")
+    print(f"  GET  /api/sessions/<id>                - Get specific session")
+    print(f"  GET  /api/stats                        - Get statistics")
     print("\nPress Ctrl+C to stop\n")
     print("="*70 + "\n")
     

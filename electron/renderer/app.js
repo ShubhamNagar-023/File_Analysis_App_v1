@@ -314,14 +314,13 @@ async function loadCases() {
  */
 async function loadRecords(sessionId) {
     try {
-        const allRecords = await apiClient.listRecords();
+        // Fetch records filtered by session
+        const records = await apiClient.listRecords({ session_id: sessionId });
         
-        // Filter records by session if needed (API returns all)
-        // For now, show all records
-        AppState.records = allRecords;
+        AppState.records = records;
         
         // Update records list
-        renderRecordsList(allRecords);
+        renderRecordsList(records);
     } catch (error) {
         handleError('Failed to load records', error);
     }
@@ -373,21 +372,33 @@ async function handleCaseChange(event) {
     if (!caseId) {
         AppState.currentCase = null;
         statusBar.setCaseContext(null);
+        
+        // Clear session selector
+        const sessionSelector = document.getElementById('session-selector');
+        if (sessionSelector) {
+            sessionSelector.innerHTML = '<option value="">-- Select Session --</option>';
+        }
         return;
     }
 
     try {
-        // Load case details and sessions
-        // const case = await ipcBridge.getCase(caseId);
-        // const sessions = await ipcBridge.listSessions({ case_id: caseId });
+        // Load case details and sessions via API
+        const caseData = await apiClient.getCase(caseId);
+        const sessions = await apiClient.listSessions(caseId);
         
-        AppState.currentCase = { case_id: caseId };
-        statusBar.setCaseContext(caseId, caseId);
+        AppState.currentCase = caseData;
+        statusBar.setCaseContext(caseId, caseData.name || caseId);
 
-        // Update session selector
+        // Update session selector with sessions from this case
         const sessionSelector = document.getElementById('session-selector');
         if (sessionSelector) {
             sessionSelector.innerHTML = '<option value="">-- Select Session --</option>';
+            sessions.forEach(session => {
+                const option = document.createElement('option');
+                option.value = session.session_id;
+                option.textContent = `${session.name} (${session.session_id})`;
+                sessionSelector.appendChild(option);
+            });
         }
     } catch (error) {
         handleError('Failed to load case', error);
@@ -408,8 +419,11 @@ async function handleSessionChange(event) {
     }
 
     try {
-        AppState.currentSession = { session_id: sessionId };
-        statusBar.setSessionContext(sessionId, sessionId);
+        // Load session details via API
+        const sessionData = await apiClient.getSession(sessionId);
+        
+        AppState.currentSession = sessionData;
+        statusBar.setSessionContext(sessionId, sessionData.name || sessionId);
 
         // Load records for session
         await loadRecords(sessionId);
