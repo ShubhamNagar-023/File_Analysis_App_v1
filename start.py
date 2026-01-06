@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-File Analysis Application - Integrated Launcher
-Starts both backend and frontend for production use.
+File Analysis Application - Main Launcher
+Launches the File Analysis Application with GUI or CLI mode.
 
 Usage:
-    python start.py                    # Start with UI
+    python start.py                    # Start with GUI
     python start.py --cli              # CLI mode only
-    python start.py --analyze <file>   # Analyze and open UI
+    python start.py --api              # Start API server only
+    python start.py --analyze <file>   # Analyze a file first, then open GUI
 """
 
 import sys
@@ -14,55 +15,40 @@ import os
 import subprocess
 import argparse
 from pathlib import Path
-import time
 
 def check_dependencies():
     """Check if required dependencies are installed"""
     print("Checking dependencies...")
     
     # Check Python dependencies
+    missing = []
     try:
         import magic
+    except (ImportError, ModuleNotFoundError):
+        missing.append('python-magic')
+    
+    try:
         import olefile
-        print("✓ Python dependencies installed")
-    except (ImportError, ModuleNotFoundError) as e:
-        module_name = getattr(e, 'name', 'unknown')
-        print(f"✗ Missing Python dependency: {module_name}")
+    except (ImportError, ModuleNotFoundError):
+        missing.append('olefile')
+    
+    if missing:
+        print(f"✗ Missing Python dependencies: {', '.join(missing)}")
         print("\nRun: pip install -r requirements.txt")
         return False
     
-    # Check Node.js for UI
+    print("✓ Core Python dependencies installed")
+    
+    # Check PyQt6 for GUI
     try:
-        result = subprocess.run(['node', '--version'], 
-                              capture_output=True, text=True)
-        if result.returncode == 0:
-            print(f"✓ Node.js {result.stdout.strip()} installed")
-            return True
-    except FileNotFoundError:
-        print("✗ Node.js not found (needed for UI)")
-        print("\nFor CLI-only mode: python start.py --cli")
-        print("To install Node.js: https://nodejs.org/")
+        import PyQt6
+        print("✓ PyQt6 installed - GUI available")
+        return True
+    except (ImportError, ModuleNotFoundError):
+        print("⚠ PyQt6 not installed - GUI not available")
+        print("\nFor GUI mode: pip install PyQt6")
+        print("For CLI-only mode: python start.py --cli")
         return "cli_only"
-    
-    return True
-
-def setup_electron():
-    """Install Electron dependencies if needed"""
-    electron_dir = Path("electron")
-    node_modules = electron_dir / "node_modules"
-    
-    if not node_modules.exists():
-        print("\nInstalling Electron dependencies...")
-        print("This may take a few minutes on first run...")
-        result = subprocess.run(['npm', 'install'], 
-                              cwd=electron_dir,
-                              capture_output=True,
-                              text=True)
-        if result.returncode != 0:
-            print(f"Error installing dependencies:\n{result.stderr}")
-            return False
-        print("✓ Electron dependencies installed")
-    return True
 
 def analyze_file(file_path):
     """Run analysis on a file"""
@@ -70,40 +56,30 @@ def analyze_file(file_path):
     result = subprocess.run([sys.executable, 'analyze_file.py', file_path])
     return result.returncode == 0
 
-def start_ui(db_path=None):
-    """Start the Electron UI"""
-    print("\nStarting File Analysis UI...")
+def start_gui():
+    """Start the PyQt6 GUI"""
+    print("\nStarting File Analysis GUI...")
     print("The desktop application will open in a new window.")
     print("Press Ctrl+C in this terminal to stop.\n")
     
-    electron_dir = Path("electron")
-    env = os.environ.copy()
-    if db_path:
-        env['ANALYSIS_DB_PATH'] = str(db_path)
-    
     try:
-        subprocess.run(['npm', 'start'], cwd=electron_dir, env=env)
+        # Check if app.py exists
+        if not Path('app.py').exists():
+            print("Error: app.py not found")
+            print("Please ensure you're running from the repository root directory")
+            return False
+        
+        result = subprocess.run([sys.executable, 'app.py'])
+        return result.returncode == 0
+    except FileNotFoundError:
+        print("Error: Python interpreter not found")
+        return False
+    except subprocess.CalledProcessError as e:
+        print(f"Error launching GUI: {e}")
+        return False
     except KeyboardInterrupt:
         print("\n\nShutting down...")
-
-def find_latest_database():
-    """Find the most recent analysis database"""
-    exports_dir = Path("exports")
-    if not exports_dir.exists():
-        return None
-    
-    # Find all subdirectories
-    subdirs = [d for d in exports_dir.iterdir() if d.is_dir()]
-    if not subdirs:
-        return None
-    
-    # Sort by modification time, get latest
-    latest = max(subdirs, key=lambda d: d.stat().st_mtime)
-    db_file = latest / "analysis.db"
-    
-    if db_file.exists():
-        return db_file
-    return None
+        return True
 
 def cli_mode():
     """Run in CLI-only mode"""
@@ -117,7 +93,7 @@ def cli_mode():
     print("\nExamples:")
     print("  python analyze_file.py test_files/sample.pdf")
     print("  python analyze_file.py /path/to/suspicious-file.exe")
-    print("  python api_server.py --port 5000  - Start on port 5000")
+    print("  python api_server.py --port 5000")
     print("\nResults are saved to exports/ directory.")
     print("="*70 + "\n")
 
@@ -135,19 +111,23 @@ def start_api_server(port=5000):
         return True
 
 def main():
-    parser = argparse.ArgumentParser(description="File Analysis Application")
+    parser = argparse.ArgumentParser(
+        description="File Analysis Application",
+        epilog="Production-Grade File Security and Forensic Analysis Tool"
+    )
     parser.add_argument('--cli', action='store_true', 
-                       help='CLI mode only (no UI)')
+                       help='CLI mode only (no GUI)')
     parser.add_argument('--api', action='store_true',
                        help='Start API server only')
     parser.add_argument('--port', type=int, default=5000,
                        help='API server port (default: 5000)')
     parser.add_argument('--analyze', metavar='FILE',
-                       help='Analyze a file, then open UI')
+                       help='Analyze a file first, then open GUI')
     args = parser.parse_args()
     
     print("\n" + "="*70)
     print("FILE ANALYSIS APPLICATION")
+    print("Production-Grade File Security Analysis")
     print("="*70 + "\n")
     
     # Check dependencies
@@ -165,7 +145,6 @@ def main():
         return 0
     
     # Analyze file first if requested
-    db_path = None
     if args.analyze:
         if not Path(args.analyze).exists():
             print(f"Error: File not found: {args.analyze}")
@@ -175,39 +154,10 @@ def main():
             print("Analysis failed")
             return 1
         
-        # Find the database that was just created
-        db_path = find_latest_database()
-        print(f"\n✓ Analysis complete. Database: {db_path}")
-        time.sleep(1)
+        print("\n✓ Analysis complete. Opening GUI to view results...")
     
-    # Setup and start UI
-    print("\nPreparing desktop UI...")
-    if not setup_electron():
-        print("\nFalling back to CLI mode...")
-        cli_mode()
-        return 0
-    
-    # Start API server in background
-    print("\nStarting API server in background...")
-    api_process = subprocess.Popen(
-        [sys.executable, 'api_server.py', '--port', str(args.port)],
-        shell=False
-    )
-    time.sleep(2)  # Give server time to start
-    
-    try:
-        start_ui(db_path)
-    finally:
-        # Stop API server
-        print("\nStopping API server...")
-        try:
-            api_process.terminate()
-            api_process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            api_process.kill()
-            api_process.wait()
-    
-    return 0
+    # Start GUI
+    return 0 if start_gui() else 1
 
 if __name__ == '__main__':
     try:

@@ -6,42 +6,52 @@ Get started with the File Analysis Application in minutes.
 
 ## Prerequisites
 
-- **Python 3.8+** for backend
-- **Node.js 18+** for frontend (optional - only needed for desktop UI)
+- **Python 3.8+** for core functionality
+- **PyQt6** for GUI (optional - only needed for desktop interface)
 
 ---
 
 ## 🚀 Quick Start
 
-### Option 1: Integrated Mode (Backend + UI)
+### Option 1: Integrated Mode (Recommended)
 
 ```bash
 # 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Start the application
+# 2. Start the application (auto-detects GUI or CLI mode)
 python start.py
 ```
 
-The integrated launcher will:
+The launcher will:
 - Check dependencies
-- Install Electron UI (first run only)
-- Start the desktop application
+- Start GUI if PyQt6 is available
+- Fall back to CLI mode if GUI not available
 
-### Option 2: CLI Only
+### Option 2: Direct GUI Launch
 
 ```bash
-# 1. Install dependencies
+# 1. Install dependencies (including PyQt6)
 pip install -r requirements.txt
 
-# 2. Analyze files
+# 2. Launch GUI directly
+python app.py
+```
+
+### Option 3: CLI Only
+
+```bash
+# 1. Install core dependencies only
+pip install python-magic olefile Flask flask-cors
+
+# 2. Analyze files via command line
 python analyze_file.py test_files/sample.pdf
 ```
 
-### Option 3: Analyze Then View in UI
+### Option 4: Analyze Then View in GUI
 
 ```bash
-# Analyze a file and open results in UI
+# Analyze a file and open results in GUI
 python start.py --analyze suspicious-file.exe
 ```
 
@@ -65,6 +75,8 @@ pip install -r requirements.txt
 **Core dependencies installed:**
 - `python-magic` - File type detection
 - `olefile` - OLE Compound Binary format parsing
+- `PyQt6` - Desktop GUI (optional)
+- `Flask` - REST API (optional)
 
 #### Step 2: Verify Installation
 
@@ -75,22 +87,34 @@ python -m pytest tests/ -v
 
 Expected: 121 tests passed
 
-#### Step 3: Analyze Your First File
+#### Step 3: Choose Your Interface
 
+**GUI Mode (PyQt6):**
 ```bash
-# Use the universal analyzer
-python analyze_file.py <path-to-your-file>
+python start.py
+# Or directly:
+python app.py
+```
 
-# Examples
-python analyze_file.py test_files/sample.pdf
-python analyze_file.py test_files/sample.docx
-python analyze_file.py /path/to/any/file
+**CLI Mode:**
+```bash
+python start.py --cli
+# Or analyze directly:
+python analyze_file.py <path-to-your-file>
+```
+
+**API Server:**
+```bash
+python start.py --api
+# Or directly:
+python api_server.py
 ```
 
 #### Step 4: View Results
 
 The analyzer automatically:
-- Displays a summary in the terminal
+- Displays results in GUI (if using GUI mode)
+- Prints summary in terminal (if using CLI mode)
 - Saves complete results to `exports/` directory in JSON, HTML, and PDF formats
 - Persists data to SQLite database
 
@@ -103,45 +127,6 @@ exports/
     ├── filename_analysis.html         # Human-readable report
     └── filename_analysis.pdf          # Professional PDF report
 ```
-
----
-
-### Frontend (Electron Desktop UI)
-
-The Electron frontend provides a graphical dashboard for viewing analysis results.
-
-#### Step 1: Navigate to Electron Directory
-
-```bash
-cd electron
-```
-
-#### Step 2: Install Dependencies
-
-```bash
-# Install Node.js dependencies
-npm install
-```
-
-#### Step 3: Start the Application
-
-```bash
-# Start the desktop application
-npm start
-
-# Or with developer tools enabled
-npm run dev
-```
-
-#### Step 4: Use the UI
-
-The Electron app will launch with:
-- File overview panel (hashes, file type, metadata)
-- Risk assessment panel (score, severity, heuristics)
-- Findings explorer (detailed analysis results)
-- Hex viewer, strings viewer, and more
-
-**Note:** The UI displays analysis results from the Python backend via IPC. Run Python analyses first to see data in the UI.
 
 ---
 
@@ -197,9 +182,9 @@ print(f"Severity: {part3['risk_score']['severity']}")
 ### Learn More
 
 - **[README.md](README.md)** - Full documentation and features
-- **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - Comprehensive testing instructions
-- **[EXPORT_GUIDE.md](EXPORT_GUIDE.md)** - Export formats and reporting
-- **[docs/](docs/)** - Additional documentation
+- **[API.md](API.md)** - REST API documentation  
+- **[TESTING.md](TESTING.md)** - Testing instructions
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture
 
 ### Optional Enhancements
 
@@ -225,7 +210,7 @@ pip install pefile pyelftools
 pip install oletools
 ```
 
-See [LIBRARY_RATIONALE.md](LIBRARY_RATIONALE.md) for details on optional libraries.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for details on optional libraries.
 
 ---
 
@@ -240,20 +225,42 @@ See [LIBRARY_RATIONALE.md](LIBRARY_RATIONALE.md) for details on optional librari
 pip install python-magic
 ```
 
-### PDF Export Not Working
+### PyQt6 Not Available
 
-**Issue:** `OSError: cannot load library 'libgobject-2.0-0'`
-
-**Solution:** WeasyPrint requires system libraries. See [PDF_EXPORT_GUIDE.md](PDF_EXPORT_GUIDE.md) for installation instructions, or the app will use text-based PDF format automatically.
-
-### Electron Won't Start
-
-**Issue:** `Error: Cannot find module 'electron'`
+**Issue:** `ERROR: PyQt6 not installed`
 
 **Solution:**
 ```bash
-cd electron
-npm install
+# For GUI support:
+pip install PyQt6
+
+# Or use CLI mode:
+python start.py --cli
+```
+
+### PDF Export Not Working
+
+**Issue:** PDF export errors
+
+**Solution:** The app uses a fallback text-based PDF format if WeasyPrint is not available. For better PDF export:
+```bash
+pip install weasyprint
+```
+
+### GUI Won't Start
+
+**Issue:** GUI fails to launch
+
+**Solution:**
+```bash
+# Ensure PyQt6 is installed
+pip install PyQt6
+
+# Try launching directly
+python app.py
+
+# Or use CLI mode
+python start.py --cli
 ```
 
 ### Tests Failing
@@ -278,8 +285,9 @@ python -m pytest tests/ -v
 
 ### Architecture Overview
 
-The application has 4 main parts:
+The application has 4 main analysis parts plus presentation layers:
 
+**Analysis Pipeline:**
 1. **PART 1** - File Ingestion & Type Resolution
    - Secure file reading
    - Hash computation
@@ -302,13 +310,12 @@ The application has 4 main parts:
    - SQLite database storage
    - JSON/HTML/PDF export
    - Case management
-   - IPC for UI integration
+   - API integration
 
-5. **PART 5** - Desktop UI (Optional)
-   - Electron-based dashboard
-   - Visual file inspection
-   - Interactive hex viewer
-   - Theme support (dark/light/high-contrast)
+**Presentation Layers:**
+- **GUI** (PyQt6) - Native desktop interface
+- **CLI** (analyze_file.py) - Command-line interface  
+- **API** (Flask) - REST API for integration
 
 ### Supported File Types
 
@@ -325,8 +332,9 @@ The application has 4 main parts:
 
 For issues or questions:
 - Check the [README.md](README.md) for detailed documentation
-- Review [TESTING_GUIDE.md](TESTING_GUIDE.md) for testing help
-- See [docs/](docs/) for additional resources
+- Review [TESTING.md](TESTING.md) for testing help
+- See [API.md](API.md) for API integration
+- Review [ARCHITECTURE.md](ARCHITECTURE.md) for technical details
 
 ---
 
